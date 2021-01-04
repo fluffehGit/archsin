@@ -1,0 +1,417 @@
+#!/bin/bash
+
+########################################
+#
+#                           █████╗ ██████╗  ██████╗██╗  ██╗    ██╗     ██╗███╗   ██╗██╗   ██╗██╗  ██╗
+#                          ██╔══██╗██╔══██╗██╔════╝██║  ██║    ██║     ██║████╗  ██║██║   ██║╚██╗██╔╝
+#                          ███████║██████╔╝██║     ███████║    ██║     ██║██╔██╗ ██║██║   ██║ ╚███╔╝
+#                          ██╔══██║██╔══██╗██║     ██╔══██║    ██║     ██║██║╚██╗██║██║   ██║ ██╔██╗
+#                          ██║  ██║██║  ██║╚██████╗██║  ██║    ███████╗██║██║ ╚████║╚██████╔╝██╔╝ ██╗
+#                          ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝    ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝
+#   ███████╗██╗███╗   ███╗██████╗ ██╗     ███████╗    ██╗███╗   ██╗███████╗████████╗ █████╗ ██╗     ██╗     ███████╗██████╗
+#   ██╔════╝██║████╗ ████║██╔══██╗██║     ██╔════╝    ██║████╗  ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ██╔════╝██╔══██╗
+#   ███████╗██║██╔████╔██║██████╔╝██║     █████╗      ██║██╔██╗ ██║███████╗   ██║   ███████║██║     ██║     █████╗  ██████╔╝
+#   ╚════██║██║██║╚██╔╝██║██╔═══╝ ██║     ██╔══╝      ██║██║╚██╗██║╚════██║   ██║   ██╔══██║██║     ██║     ██╔══╝  ██╔══██╗
+#   ███████║██║██║ ╚═╝ ██║██║     ███████╗███████╗    ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗███████╗██║  ██║
+#   ╚══════╝╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝
+#
+# Author: fluffeh
+# v1.0 - 26.12.2020
+# Source: !!!TBD!!!
+#
+########################################
+
+function systemCheck {
+    dmesg | grep efi:;
+
+    if [[ $? == 0 ]]; then
+        echo -e "EFI detected.\nInstallation script started!"
+    else
+        echo "MBR/DOS not yet supported!!";
+        exit 1;
+    fi
+
+}
+
+# Setting up install environment;
+function getEnvironment {
+
+#   EXITLOOP=false;
+
+#until $EXITLOOP;
+#do
+        read -p "Country name for pacman mirrors: " COUNTRY;
+        read -p "Closest city for timezone: " CITY;
+        read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning ?[M/a] ' PARTTYPE;
+        : ${PARTTYPE:=A};
+
+        if [[ $PARTTYPE == [Aa]* ]] ; then
+            AUTOPART=true;
+        else
+            AUTOPART=false;
+        fi
+
+        lsblk;
+        read -p "Install disk full path (/dev/sdx): " INSTALLDISK;
+
+        if [[ -f gitlabAPIRead.token ]]; then
+            read GITLABHEADER < gitlabAPIRead.token;
+        else
+            read -p "Input GitLab API token: " GITLABHEADER;
+        fi
+
+        GITLABHEADER="PRIVATE-TOKEN: "$GITLABHEADER;
+
+        if [[ -f gitlabEtcRepo.ID ]]; then
+            read REPOID < gitlabEtcRepo.ID;
+        else
+            read -p "Input GitLab /etc repo ID: " REPOID;
+        fi
+
+        read -p "Machine name (hostname): " HSTNAME;
+        read -p "Machine username: " USRNAME;
+        read -p "${USRNAME} groups (comma separated): " USRGROUPS;
+        USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
+        read -p "Git username: " GITUSR;
+        read -p "Git e-mail: " GITMAIL;
+        read -p "Git root username: " GITROOTUSR;
+        read -p "Git root e-mail: " GITROOTMAIL;
+
+        : << 'TBD'
+        echo -e "You have entered the following data:" \
+            "\nCountry: "$COUNTRY \
+            "\nCity: "$CITY \
+            "\nAuto partitioning? "$AUTOPART \
+            "\nInstallation Disk: "$INSTALLDISK \
+            "\nGitLab token: "$GITLABHEADER \
+            "\nGitLab repo ID: "$REPOID \
+            "\nHostname: "$HSTNAME \
+            "\nUser Name: "$USRNAME \
+            "\nUser Groups: "$USRGROUPS \
+            "\nGit user: "$GITUSR \
+            "\nGit e-mail: "$GITMAIL \
+            "\nGit root user: "$GITROOTUSR \
+            "\nGit root e-mail: "$GITROOTMAIL;
+
+        read -p "Is the above correct?[Y/n]"
+TBD
+
+#done #until $EXITLOOP;
+
+}
+
+function setMirrors {
+
+    pacman -Syy --noconfirm reflector;
+    reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https,rsync;
+
+}
+
+function setupDisk {
+
+    # Partitioning disk
+    if $AUTOPART ; then
+        sed --in-place=.bkp "s#/dev/sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
+        sfdisk $INSTALLDISK < efiBTRFS.disk.layout;
+    else
+        fdisk $INSTALLDISK;
+    fi
+
+    # Formatting efi partition
+    mkfs.fat -F32 /dev/sda1;
+
+    # Formatting main partition as BTRFS
+    mkfs.btrfs /dev/sda2;
+
+    # Mounting main partition
+    mount /dev/sda2 /mnt;
+
+    # Creating BTRFS Subvolumes
+    btrfs subvolume create /mnt/@root;
+    btrfs subvolume create /mnt/@home;
+    btrfs subvolume create /mnt/@var;
+    btrfs subvolume create /mnt/@srv;
+    btrfs subvolume create /mnt/@opt;
+    btrfs subvolume create /mnt/@tmp;
+    btrfs subvolume create /mnt/@swap;
+    btrfs subvolume create /mnt/@snapshots;
+
+    # Unmounting BTRFS partition
+    umount /mnt;
+
+    # Mounting BTRFS @root Subvolume
+    mount --options noatime,compress=zstd,space_cache,subvol=@root /dev/sda2 /mnt;
+
+    # Creating mount directories for all subvolumes
+    mkdir /mnt/{boot,home,var,srv,opt,tmp,swap,.snapshots};
+
+    # Mounting boot partition
+    mount /dev/sda1 /mnt/boot;
+
+    # Mounting Subvolumes
+    mount --options noatime,compress=zstd,space_cache,subvol=@home /dev/sda2 /mnt/home;
+    mount --options noatime,compress=zstd,space_cache,subvol=@srv /dev/sda2 /mnt/srv;
+    mount --options noatime,compress=zstd,space_cache,subvol=@tmp /dev/sda2 /mnt/tmp;
+    mount --options noatime,compress=zstd,space_cache,subvol=@opt /dev/sda2 /mnt/opt;
+    mount --options noatime,compress=zstd,space_cache,subvol=@snapshots /dev/sda2 /mnt/.snapshots;
+    mount --options subvol=@swap /dev/sda2 /mnt/swap;
+    mount --options subvol=@var /dev/sda2 /mnt/var;
+
+    # Disableing CoW on swap and var
+    chattr +C /mnt/swap;
+    chattr +C /mnt/var;
+
+}
+
+function createSwap {
+
+    # Creating Swap File
+    truncate --size=0 /swap/swapfile;
+
+    # Disablin compression
+    btrfs property set /swap/swapfile compression none;
+
+    # Making Swap File 4G in size
+    dd if=/dev/zero of=/swap/swapfile bs=1G count=4 status=progress;
+
+    chmod 600 /swap/swapfile;
+    mkswap /swap/swapfile;
+    swapon /swap/swapfile;
+    echo "/swap/swapfile none swap defaults 0 0" >> /etc/fstab;
+
+}
+
+function installPackages {
+
+    # pulling pacman.conf
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.conf/raw?ref=master" --output /etc;
+
+    # pulling package list
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.expkgs.list/raw?ref=master" --output $HOME/install.list;
+    # Installing packages
+    pacman -Syy --needed --noconfirm - < $HOME/install.list;
+
+    # Removing install list
+    rm --force $HOME/install.list
+
+}
+
+function setLocale {
+
+    #Setting timezone
+    LOCALZONE=$(timedatectl list-timezones | grep $CITY);
+    ln --symbolic --force /usr/share/zoneinfo/$LOCALZONE /etc/localtime;
+    hwclock --systohc;
+
+    # Locale
+    sed --in-place=.bkp 's/#en_US.UTF-8*/en_US.UTF-8/' /etc/locale.gen;
+    locale-gen;
+    echo LANG=en_US.UTF-8 >> /etc/locale.conf;
+
+}
+
+function setHost {
+
+    # Editing hostname and hosts file
+    echo $HSTNAME > /etc/hostname;
+    echo -e "127.0.0.1\tlocalhost" >> /etc/hosts;
+    echo -e "::1\tlocalhost" >> /etc/hosts;
+    echo -e "127.0.1.1\t"$HSTNAME".localdomain\t"$HSTNAME;
+
+}
+
+function ramDiskEnvGrub {
+
+    # pulling mkinitcpio.conf
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/mkinitcpio.conf/raw?ref=master" --output /etc/mkinitcpio.conf;
+    mkinitcpio --preset linux;
+
+    # installing grub
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB;
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/default%2Fgrub/raw?ref=master" --output /etc/default/grub;
+    grub-mkconfig --output /boot/grub/grub.cfg;
+
+}
+
+function setUser {
+
+    # Creating user
+    useradd --create-home --groups $USRGROUPS $USRNAME;
+
+    echo $USRNAME" PASSWD!";
+    passwd $USRNAME;
+
+    echo "ROOT PASSWD!";
+    passwd;
+
+    #TBD Automation
+    visudo;
+
+}
+
+function setYay {
+
+    mkdir --parents $HOME/AUR/yay;
+    git clone https://aur.archlinux.org/yay.git $HOME/AUR/yay;
+    cd ~/AUR/yay;
+    makepkg --syncdeps --install --rmdeps --clean --noconfirm;
+
+}
+
+function setAURPkgs {
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.aurpkgs.list/raw?ref=master" --output $HOME/aur.pkgs.list;
+    yay -Syy --needed --nodiffmenu --answerclean All --removemake --cleanafter - < $HOME/aur.pkgs.list --noconfirm;
+    rm --force $HOME/aur.pkgs.list;
+}
+
+function setGit {
+
+    # Git Setup
+    git config --global user.name $1;
+    git config --global user.email $2;
+
+}
+
+function setDotfiles {
+
+    mkdir $HOME/.dotfiles;
+    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git $HOME/.dotfiles;
+    rm --recursive --force $HOME/.bash*;
+    git --git-dir=$HOME/.dotfiles --work-tree=$HOME checkout;
+    git --git-dir=$HOME/.dotfiles --work-tree=$HOME config --local status.showUntrackedFiles no;
+
+}
+
+function executeAsUser {
+
+    setYay;
+
+    setAURPkgs;
+
+    setGit $GITUSR $GITMAIL;
+
+    setDotfiles;
+
+}
+
+function setSnapper {
+
+    # Snapper setup
+    # Below two lines needed bc snapper create-config creates .snapshots folder
+    umount --force /.snapshots;
+    rm --recursive --force /.snapshots;
+
+    snapper --config root create-config /;
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/snapper%2Fconfigs%2Froot/raw?ref=master" --output /snapper/configs/;
+
+    systemctl enable snapper-timeline.timer;
+    systemctl enable snapper-cleanup.timer;
+    systemctl enable grub-btrfs.path
+
+}
+
+function getConfigs {
+
+    mkdir /etc/pacman.d/hooks;
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.d%2Fhooks%2Fmirrorlist.hook/raw?ref=master" --output /etc/pacman.d/hooks/mirrorlist.hook;
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.d%2Fhooks%2Fpkglists.hook/raw?ref=master" --output /etc/pacman.d/hooks/pkglists.hook;
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.d%2Fhooks%2Frkhunter.hook/raw?ref=master" --output /etc/pacman.d/hooks/rkhunter.hook;
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
+
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
+
+}
+
+function setApps {
+
+    # ClamAV setup
+    freshclam;
+    systemctl enable clamav-freshclam.service;
+
+    # Fangfrisch database
+    sudo --user=clamav /usr/bin/fangfrisch --conf /etc/fangfrisch/fangfrisch.conf initdb;
+    systemctl enable fangfrisch.timer;
+
+    # etckeeper
+    etckeeper init;
+    etckeeper commit "fresh install";
+    systemctl enable etckeeper.timer;
+
+    # rkhunter
+    rkhunter --propupd;
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/;
+
+}
+
+function chrooted {
+
+    createSwap;
+
+    installPackages;
+
+    setLocale;
+
+    setHost;
+
+    ramDiskEnvGrub;
+
+    setUser;
+
+    # Executing User function
+    sudo --user=$USRNAME --login /bin/bash -x executeAsUser;
+
+    setSnapper;
+
+    # Pulling configs
+    getConfigs;
+
+    setGit $GITROOTUSR $GITROOTMAIL;
+
+    # Finishing touches
+    setApps;
+
+    # Enabling services
+    systemctl enable NetworkManager;
+    systemctl enable bluetooth;
+    systemctl enable tlp.service
+}
+
+## Installation sequence
+systemCheck;
+
+# Updating the system clock
+timedatectl set-ntp true;
+
+# Env setup
+getEnvironment;
+
+# Installing essentials
+pacstrap /mnt base base-devel linux linux-firmware linux-headers;
+
+# Generating FSTab
+genfstab -U /mnt >> /mnt/etc/fstab;
+
+arch-chroot /mnt /bin/bash -x chrooted;
+
+# TO DO
+echo "SET UP GIT USER:";
+echo "git config --global user.name 'username'";
+echo "git config --global user.email 'email'";
+echo "git config --global --list";
+echo "Generate ssh keys and add them to GitHub and GitLab!!!";
+echo "ssh-keygen -t ed25519 -C 'user+machine'";
+echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
+echo "TEST WITH ssh -T git@git{hub,lab}.com";
+echo "ADD GIT REMOTE TO etckeeper!!!";
+# Exiting chroot
+#exit;
+
+#umount -a;
+
+#reboot;
