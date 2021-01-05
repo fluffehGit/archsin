@@ -23,7 +23,7 @@ function getEnvironment {
         : ${PARTTYPE:=A};
 
         lsblk;
-        read -p "Installation disk (sdx): " INSTALLDISK;
+        read -p "Installation disk full path (/dev/sdx): " INSTALLDISK;
 
         if [[ -f gitlabAPIRead.token ]]; then
             read GITLABHEADER < gitlabAPIRead.token;
@@ -78,11 +78,11 @@ function setMirrors {
 
 }
 
-function setupDisk {
+function setDisk {
 
     # Partitioning disk
     if [[ $PARTTYPE == [Aa]* ]] ; then
-        sed --in-place=.bkp "s#sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
+        sed --in-place=.bkp "s#/dev/sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
         sfdisk $INSTALLDISK < efiBTRFS.disk.layout;
     else
         fdisk $INSTALLDISK;
@@ -335,7 +335,7 @@ function chrooted {
     setUser;
 
     # Executing User function
-    sudo --user=$USRNAME --login /bin/bash -x executeAsUser;
+    sudo --user=$USRNAME --login executeAsUser;
 
     setSnapper;
 

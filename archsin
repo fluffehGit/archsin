@@ -18,7 +18,7 @@
 # Author: fluffeh
 # v1.0 - 26.12.2020
 # Source: https://git.io/fluffeh-archsin
-# Install command: curl --location "https://git.io/fluffeh-archsin" --output ./archsin
+# Install command: curl --location "https://git.io/fluffeh-archsin" --output ./archsin && chmod 744 archsin
 #
 ########################################
 
@@ -36,6 +36,11 @@ systemCheck;
 timedatectl set-ntp true && \
     # Env setup
     getEnvironment;
+# Setting mirrorlist
+setMirrors;
+
+# Parttion disk
+setDisk;
 
 # Installing essentials
 pacstrap /mnt base base-devel linux linux-firmware linux-headers;
@@ -43,7 +48,7 @@ pacstrap /mnt base base-devel linux linux-firmware linux-headers;
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
 
-arch-chroot /mnt /bin/bash -x chrooted;
+arch-chroot /mnt chrooted;
 
 # TO DO
 echo "SET UP GIT USER:";
