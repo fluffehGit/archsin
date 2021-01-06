@@ -22,7 +22,7 @@ function getEnvironment {
         read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning ?[A/m]: ' PARTTYPE;
         : ${PARTTYPE:=A};
 
-        lsblk;
+        lsblk --paths;
         read -p "Installation disk full path (/dev/sdx): " INSTALLDISK;
 
         if [[ -f gitlabAPIRead.token ]]; then
@@ -155,7 +155,7 @@ function createSwap {
 function installPackages {
 
     # pulling pacman.conf
-    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.conf/raw?ref=master" --output /etc;
+    curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.conf/raw?ref=master" --output /etc/pacman.conf;
 
     # pulling package list
     curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/pacman.expkgs.list/raw?ref=master" --output $HOME/install.list;
@@ -254,18 +254,6 @@ function setDotfiles {
 
 }
 
-function executeAsUser {
-
-    setYay;
-
-    setAURPkgs;
-
-    setGit $GITUSR $GITMAIL;
-
-    setDotfiles;
-
-}
-
 function setSnapper {
 
     # Snapper setup
@@ -318,39 +306,6 @@ function setApps {
     rkhunter --propupd;
     curl --header "${GITLABHEADER}" "https://gitlab.com/api/v4/projects/${REPOID}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/;
 
-}
-
-function chrooted {
-
-    createSwap;
-
-    installPackages;
-
-    setLocale;
-
-    setHost;
-
-    ramDiskEnvGrub;
-
-    setUser;
-
-    # Executing User function
-    sudo --user=$USRNAME --login executeAsUser;
-
-    setSnapper;
-
-    # Pulling configs
-    getConfigs;
-
-    setGit $GITROOTUSR $GITROOTMAIL;
-
-    # Finishing touches
-    setApps;
-
-    # Enabling services
-    systemctl enable NetworkManager;
-    systemctl enable bluetooth;
-    systemctl enable tlp.service
 }
 
 # vim: filetype=sh

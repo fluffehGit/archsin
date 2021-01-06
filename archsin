@@ -33,9 +33,11 @@ source functions
 systemCheck;
 
 # Updating the system clock
-timedatectl set-ntp true && \
-    # Env setup
-    getEnvironment;
+timedatectl set-ntp true;
+
+# Env setup
+getEnvironment;
+
 # Setting mirrorlist
 setMirrors;
 
@@ -43,12 +45,59 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
 
-arch-chroot /mnt chrooted;
+# Executed as user in chroot environment
+function executeAsUser {
+
+    setYay;
+
+    setAURPkgs;
+
+    setGit $GITUSR $GITMAIL;
+
+    setDotfiles;
+
+}
+
+# Executed as root in chroot environment
+function chrooted {
+
+    createSwap;
+
+    installPackages;
+
+    setLocale;
+
+    setHost;
+
+    ramDiskEnvGrub;
+
+    setUser;
+
+    # Executing User function
+    sudo --user=$USRNAME --login executeAsUser;
+
+    setSnapper;
+
+    # Pulling configs
+    getConfigs;
+
+    setGit $GITROOTUSR $GITROOTMAIL;
+
+    # Finishing touches
+    setApps;
+
+    # Enabling services
+    systemctl enable NetworkManager;
+    systemctl enable bluetooth;
+    systemctl enable tlp.service
+}
+
+arch-chroot /mnt /bin/bash -c chrooted;
 
 # TO DO
 echo "SET UP GIT USER:";
