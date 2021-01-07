@@ -1,0 +1,35 @@
+#!/bin/bash
+
+function setSnapper {
+
+    # Snapper setup
+    # Below two lines needed bc snapper create-config creates .snapshots folder
+    umount --force /.snapshots;
+    rm --recursive --force /.snapshots;
+
+    snapper --config root create-config /;
+
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/snapper%2Fconfigs%2Froot/raw?ref=master" --output /etc/snapper/configs/root;
+
+    chmod 755 /.snapshots;
+    systemctl enable snapper-timeline.timer;
+    systemctl enable snapper-cleanup.timer;
+    systemctl enable grub-btrfs.path
+
+}
+
+if [[ -f gitlabAPIRead.token ]]; then
+    read GITLABHEADER < gitlabAPIRead.token;
+else
+    read -p "Input GitLab API token: " GITLABHEADER;
+fi
+
+GITLABHEADER="PRIVATE-TOKEN: "$GITLABHEADER;
+
+if [[ -f gitlabEtcRepo.ID ]]; then
+    read REPOID < gitlabEtcRepo.ID;
+else
+    read -p "Input GitLab /etc repo ID: " REPOID;
+fi
+
+setSnapper "${GITLABHEADER}" "${REPOID}";

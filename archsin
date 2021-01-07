@@ -61,7 +61,7 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     setLocale "${CITY}";
     setHost "${HSTNAME}";
     ramDiskEnvGrub "${GITLABHEADER}" "${REPOID}";
-    setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}";
+    setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${GITLABHEADER}" "${REPOID}";
 
     cp \$HOME/functions /home/$USRNAME/
 
@@ -78,7 +78,6 @@ arch-chroot /mnt /bin/bash << EOCHROOT
 
     rm /home/$USRNAME/functions
 
-    setSnapper "${GITLABHEADER}" "${REPOID}";
     getConfigs "${GITLABHEADER}" "${REPOID}";
     setGit "${GITROOTUSR}" "${GITROOTMAIL}" "${HSTNAME}";
     setApps "${GITLABHEADER}" "${REPOID}";

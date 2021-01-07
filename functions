@@ -213,7 +213,7 @@ function setUser {
     chpasswd <<< $2:$3;
 
     mv /etc/sudoers /etc/sudoers.bkp
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/sudoers/raw?ref=master" --output /etc/sudoers;
+    curl --header "${4}" "https://gitlab.com/api/v4/projects/${5}/repository/files/sudoers/raw?ref=master" --output /etc/sudoers;
     visudo --check --file=/etc/sudoers;
 
 }
@@ -255,24 +255,6 @@ function setDotfiles {
     git --git-dir=$HOME/.dotfiles --work-tree=$HOME config --local status.showUntrackedFiles no;
 
     git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
-
-}
-
-function setSnapper {
-
-    # Snapper setup
-    # Below two lines needed bc snapper create-config creates .snapshots folder
-    umount --force /.snapshots;
-    rm --recursive --force /.snapshots;
-
-    snapper --config root create-config /;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/snapper%2Fconfigs%2Froot/raw?ref=master" --output /etc/snapper/configs/root;
-
-    chmod 755 /.snapshots;
-    systemctl enable snapper-timeline.timer;
-    systemctl enable snapper-cleanup.timer;
-    systemctl enable grub-btrfs.path
 
 }
 
