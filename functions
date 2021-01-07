@@ -41,6 +41,7 @@ function getEnvironment {
 
         read -p "Machine name (hostname): " HSTNAME;
         read -p "Machine username: " USRNAME;
+        read -p "${USRNAME} password: " USRPASSWD;
         read -p "${USRNAME} groups (comma separated): " USRGROUPS;
         USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
         read -p "Git username: " GITUSR;
@@ -73,7 +74,7 @@ TBD
 
 function setMirrors {
 
-    pacman -Syy --noconfirm reflector;
+    pacman -Syy --noconfirm --needed reflector;
     reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https,rsync;
 
 }
@@ -209,14 +210,11 @@ function setUser {
     # Creating user
     useradd --create-home --groups $1 $2;
 
-    echo "${2} PASSWD!";
-    passwd $2;
+    chpasswd <<< $2:$3;
 
-    echo "ROOT PASSWD!";
-    passwd;
-
-    #TBD Automation
-    visudo;
+    mv /etc/sudoers /etc/sudoers.bkp
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/sudoers/raw?ref=master" --output /etc/sudoers;
+    visudo --check --file=/etc/sudoers;
 
 }
 

@@ -45,60 +45,10 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs snapper grub grub-btrfs efibootmgr;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs snapper grub grub-btrfs efibootmgr vim;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
-
-: << 'EOBCOMM'
-# Executed as user in chroot environment
-function executeAsUser {
-
-    setYay;
-
-    setAURPkgs;
-
-    setGit $GITUSR $GITMAIL;
-
-    setDotfiles;
-
-}
-
-# Executed as root in chroot environment
-function chrooted {
-
-    createSwap;
-
-    installPackages;
-
-    setLocale;
-
-    setHost;
-
-    ramDiskEnvGrub;
-
-    setUser;
-
-    # Executing User function
-    sudo --user=$USRNAME --login executeAsUser;
-
-    setSnapper;
-
-    # Pulling configs
-    getConfigs;
-
-    setGit $GITROOTUSR $GITROOTMAIL;
-
-    # Finishing touches
-    setApps;
-
-    # Enabling services
-    systemctl enable NetworkManager;
-    systemctl enable bluetooth;
-    systemctl enable tlp.service
-}
-
-EOBCOMM
 
 cp functions /mnt/root/;
 
@@ -111,9 +61,9 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     setLocale "${CITY}";
     setHost "${HSTNAME}";
     ramDiskEnvGrub "${GITLABHEADER}" "${REPOID}";
-    setUser "${USRGROUPS}" "${USRNAME}";
+    setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}";
 
-    cp \$HOME/functions /home/$USRNAME/functions
+    cp \$HOME/functions /home/$USRNAME/
 
     sudo --user=$USRNAME --login /bin/bash <<-EOUSER
 
@@ -145,3 +95,4 @@ rm /mnt/root/functions
 echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
 echo "TEST WITH ssh -T git@git{hub,lab}.com";
 echo "ADD GIT REMOTES!!!";
+echo "ADD root passwd!!!";
