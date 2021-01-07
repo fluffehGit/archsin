@@ -64,12 +64,12 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${GITLABHEADER}" "${REPOID}";
     setDotFiles "${USRNAME}";
     getConfigs "${GITLABHEADER}" "${REPOID}";
-    setGit "${GITROOTUSR}" "${GITROOTMAIL}" "${HSTNAME}";
-    setApps "${GITLABHEADER}" "${REPOID}";
 
-    systemctl enable NetworkManager;
-    systemctl enable bluetooth;
-    systemctl enable tlp.service;
+    git config --global user.name $GITROOTUSR;
+    git config --global user.email $GITROOTMAIL;
+
+    # Generating ED25519 keyfile
+    ssh-keygen -t ed25519 -C "\${USER} on ${HSTNAME}";
 
 EOCHROOT
 
@@ -78,9 +78,9 @@ rm /mnt/root/functions
 curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/post-install" --output /mnt/home/$USRNAME/post-install;
 
 sed --in-place "1i \
-    GITLABHEADER=${GITLABHEADER}\n \
-    REPOID=${REPOID}\n \
-    GITUSR=${GITUSR}\n \
-    GITMAIL=${GITMAIL}\n \
-    HSTNAME=${HSTNAME}\n \
+    GITLABHEADER=\"${GITLABHEADER}\"\n \
+    REPOID=\"${REPOID}\"\n \
+    GITUSR=\"${GITUSR}\"\n \
+    GITMAIL=\"${GITMAIL}\"\n \
+    HSTNAME=\"${HSTNAME}\"\n \
     " /mnt/home/$USRNAME/post-install;

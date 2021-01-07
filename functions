@@ -218,15 +218,13 @@ function setUser {
 
 }
 
-function setDotfiles {
+function setDotFiles {
 
     mkdir /home/$1/.dotfiles;
     git clone --bare https://gitlab.com/fluffehLab/dotfiles.git /home/$1/.dotfiles;
     rm --recursive --force /home/$1/.bash*;
     git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 checkout;
     git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 config --local status.showUntrackedFiles no;
-
-
 }
 
 function getConfigs {
@@ -242,27 +240,6 @@ function getConfigs {
     curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
 
     curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
-
-}
-
-function setApps {
-
-    # ClamAV setup
-    freshclam;
-    systemctl enable clamav-freshclam.service;
-
-    # Fangfrisch database
-    sudo --user=clamav /usr/bin/fangfrisch --conf /etc/fangfrisch/fangfrisch.conf initdb;
-    systemctl enable fangfrisch.timer;
-
-    # etckeeper
-    etckeeper init;
-    etckeeper commit "fresh install";
-    systemctl enable etckeeper.timer;
-
-    # rkhunter
-    rkhunter --propupd;
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/rkhunter.timer;
 
 }
 

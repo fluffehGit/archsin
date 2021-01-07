@@ -17,17 +17,6 @@ function setAURPkgs {
     rm --force $HOME/aur.pkgs.list;
 }
 
-function setGit {
-
-    # Git Setup
-    git config --global user.name $1;
-    git config --global user.email $2;
-
-    # Generating ED25519 keyfile
-    ssh-keygen -t ed25519 -C "${USER} on ${3}";
-
-}
-
 function setSnapper {
 
     # Snapper setup
@@ -46,24 +35,44 @@ function setSnapper {
 
 }
 
-if [[ -f gitlabAPIRead.token ]]; then
-    read GITLABHEADER < gitlabAPIRead.token;
-else
-    read -p "Input GitLab API token: " GITLABHEADER;
-fi
+function setApps {
 
-GITLABHEADER="PRIVATE-TOKEN: "$GITLABHEADER;
+    # ClamAV setup
+    freshclam;
+    systemctl enable clamav-freshclam.service;
 
-if [[ -f gitlabEtcRepo.ID ]]; then
-    read REPOID < gitlabEtcRepo.ID;
-else
-    read -p "Input GitLab /etc repo ID: " REPOID;
-fi
+    # Fangfrisch database
+    sudo --user=clamav /usr/bin/fangfrisch --conf /etc/fangfrisch/fangfrisch.conf initdb;
+    systemctl enable fangfrisch.timer;
+
+    # etckeeper
+    etckeeper init;
+    etckeeper commit "fresh install";
+    systemctl enable etckeeper.timer;
+
+    # rkhunter
+    rkhunter --propupd;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/rkhunter.timer;
+    systemctl enable rkhunter.timer.
+
+    systemctl enable NetworkManager;
+    systemctl enable bluetooth;
+    systemctl enable tlp.service;
+
+}
+
+# Git Setup
+git config --global user.name $GITUSR;
+git config --global user.email $GITMAIL;
+
+# Generating ED25519 keyfile
+ssh-keygen -t ed25519 -C "${USER} on ${HSTNAME}";
 
 setYay;
 setAURPkgs "${GITLABHEADER}" "${REPOID}";
 setGit "${GITUSR}" "${GITMAIL}" "${HSTNAME}";
-setSnapper "${GITLABHEADER}" "${REPOID}";
+sudo setSnapper "${GITLABHEADER}" "${REPOID}";
+sudo setApps "${GITLABHEADER}" "${REPOID}";
 
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
 
