@@ -45,11 +45,12 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs snapper grub grub-btrfs efibootmgr;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
 
+: << 'EOBCOMM'
 # Executed as user in chroot environment
 function executeAsUser {
 
@@ -97,21 +98,50 @@ function chrooted {
     systemctl enable tlp.service
 }
 
-arch-chroot /mnt /bin/bash -c chrooted;
+EOBCOMM
 
-# TO DO
-echo "SET UP GIT USER:";
-echo "git config --global user.name 'username'";
-echo "git config --global user.email 'email'";
-echo "git config --global --list";
-echo "Generate ssh keys and add them to GitHub and GitLab!!!";
-echo "ssh-keygen -t ed25519 -C 'user+machine'";
+cp functions /mnt/root/;
+
+arch-chroot /mnt /bin/bash << EOCHROOT
+
+    source \$HOME/functions;
+
+    createSwap;
+    installPackages $GITLABHEADER $REPOID;
+    setLocale $CITY;
+    setHost $HSTNAME;
+    ramDiskEnvGrub $GITLABHEADER $REPOID;
+    setUser $USRGROUPS $USRNAME;
+
+    cp \$HOME/functions /home/$USRNAME/functions
+
+    sudo --user=$USRNAME --login /bin/bash <<-EOUSER
+
+        source \$HOME/functions;
+
+        setYay;
+        setAURPkgs $GITLABHEADER $REPOID;
+        setGit $GITUSR $GITMAIL $HSTNAME;
+        setDotFiles;
+
+	EOUSER
+
+    rm /home/$USRNAME/functions
+
+    setSnapper $GITLABHEADER $REPOID;
+    getConfigs $GITLABHEADER $REPOID;
+    setGit $GITROOTUSR $GITROOTMAIL $HSTNAME;
+    setApps $GITLABHEADER $REPOID;
+
+    systemctl enable NetworkManager;
+    systemctl enable bluetooth;
+    systemctl enable tlp.service;
+
+EOCHROOT
+
+rm /mnt/root/functions
+
+# Remaining TO-DOs
 echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
 echo "TEST WITH ssh -T git@git{hub,lab}.com";
-echo "ADD GIT REMOTE TO etckeeper!!!";
-# Exiting chroot
-#exit;
-
-#umount -a;
-
-#reboot;
+echo "ADD GIT REMOTES!!!";
