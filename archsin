@@ -45,7 +45,7 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs snapper grub grub-btrfs efibootmgr vim;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
@@ -62,22 +62,7 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     setHost "${HSTNAME}";
     ramDiskEnvGrub "${GITLABHEADER}" "${REPOID}";
     setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${GITLABHEADER}" "${REPOID}";
-
-    cp \$HOME/functions /home/$USRNAME/
-
-    sudo --user=$USRNAME --login /bin/bash <<-EOUSER
-
-        source \$HOME/functions;
-
-        setYay;
-        setAURPkgs "${GITLABHEADER}" "${REPOID}";
-        setGit "${GITUSR}" "${GITMAIL}" "${HSTNAME}";
-        setDotFiles;
-
-	EOUSER
-
-    rm /home/$USRNAME/functions
-
+    setDotFiles "${USRNAME}";
     getConfigs "${GITLABHEADER}" "${REPOID}";
     setGit "${GITROOTUSR}" "${GITROOTMAIL}" "${HSTNAME}";
     setApps "${GITLABHEADER}" "${REPOID}";
@@ -90,8 +75,12 @@ EOCHROOT
 
 rm /mnt/root/functions
 
-# Remaining TO-DOs
-echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
-echo "TEST WITH ssh -T git@git{hub,lab}.com";
-echo "ADD GIT REMOTES!!!";
-echo "ADD root passwd!!!";
+curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/post-install" --output /mnt/home/$USRNAME/post-install;
+
+sed --in-place "1i \
+    GITLABHEADER=${GITLABHEADER}\n \
+    REPOID=${REPOID}\n \
+    GITUSR=${GITUSR}\n \
+    GITMAIL=${GITMAIL}\n \
+    HSTNAME=${HSTNAME}\n \
+    "

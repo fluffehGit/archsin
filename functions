@@ -218,43 +218,14 @@ function setUser {
 
 }
 
-function setYay {
-
-    mkdir --parents $HOME/AUR/yay;
-    git clone https://aur.archlinux.org/yay.git $HOME/AUR/yay;
-    cd $HOME/AUR/yay;
-    makepkg --syncdeps --install --rmdeps --clean --noconfirm;
-    cd $HOME;
-
-}
-
-function setAURPkgs {
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${$2}/repository/files/pacman.aurpkgs.list/raw?ref=master" --output $HOME/aur.pkgs.list;
-    yay -Syy --needed --nodiffmenu --answerclean All --removemake --cleanafter - < $HOME/aur.pkgs.list --noconfirm;
-    rm --force $HOME/aur.pkgs.list;
-}
-
-function setGit {
-
-    # Git Setup
-    git config --global user.name $1;
-    git config --global user.email $2;
-
-    # Generating ED25519 keyfile
-    ssh-keygen -t ed25519 -C "${USER} on ${3}";
-
-}
-
 function setDotfiles {
 
-    mkdir $HOME/.dotfiles;
-    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git $HOME/.dotfiles;
-    rm --recursive --force $HOME/.bash*;
-    git --git-dir=$HOME/.dotfiles --work-tree=$HOME checkout;
-    git --git-dir=$HOME/.dotfiles --work-tree=$HOME config --local status.showUntrackedFiles no;
+    mkdir /home/$1/.dotfiles;
+    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git /home/$1/.dotfiles;
+    rm --recursive --force /home/$1/.bash*;
+    git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 checkout;
+    git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 config --local status.showUntrackedFiles no;
 
-    git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
 
 }
 
