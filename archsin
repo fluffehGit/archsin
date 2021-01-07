@@ -107,11 +107,11 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     source \$HOME/functions;
 
     createSwap;
-    installPackages $GITLABHEADER $REPOID;
-    setLocale $CITY;
-    setHost $HSTNAME;
-    ramDiskEnvGrub $GITLABHEADER $REPOID;
-    setUser $USRGROUPS $USRNAME;
+    installPackages "${GITLABHEADER}" "${REPOID}";
+    setLocale "${CITY}";
+    setHost "${HSTNAME}";
+    ramDiskEnvGrub "${GITLABHEADER}" "${REPOID}";
+    setUser "${USRGROUPS}" "${USRNAME}";
 
     cp \$HOME/functions /home/$USRNAME/functions
 
@@ -120,18 +120,18 @@ arch-chroot /mnt /bin/bash << EOCHROOT
         source \$HOME/functions;
 
         setYay;
-        setAURPkgs $GITLABHEADER $REPOID;
-        setGit $GITUSR $GITMAIL $HSTNAME;
+        setAURPkgs "${GITLABHEADER}" "${REPOID}";
+        setGit "${GITUSR}" "${GITMAIL}" "${HSTNAME}";
         setDotFiles;
 
 	EOUSER
 
     rm /home/$USRNAME/functions
 
-    setSnapper $GITLABHEADER $REPOID;
-    getConfigs $GITLABHEADER $REPOID;
-    setGit $GITROOTUSR $GITROOTMAIL $HSTNAME;
-    setApps $GITLABHEADER $REPOID;
+    setSnapper "${GITLABHEADER}" "${REPOID}";
+    getConfigs "${GITLABHEADER}" "${REPOID}";
+    setGit "${GITROOTUSR}" "${GITROOTMAIL}" "${HSTNAME}";
+    setApps "${GITLABHEADER}" "${REPOID}";
 
     systemctl enable NetworkManager;
     systemctl enable bluetooth;

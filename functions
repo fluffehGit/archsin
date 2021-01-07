@@ -155,22 +155,22 @@ function createSwap {
 function installPackages {
 
     # pulling pacman.conf
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/pacman.conf/raw?ref=master" --output /etc/pacman.conf;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.conf/raw?ref=master" --output /etc/pacman.conf;
 
     # pulling package list
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/pacman.expkgs.list/raw?ref=master" --output \$HOME/install.list;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.expkgs.list/raw?ref=master" --output $HOME/install.list;
     # Installing packages
-    pacman -Syy --needed --noconfirm - < \$HOME/install.list;
+    pacman -Syy --needed --noconfirm - < $HOME/install.list;
 
     # Removing install list
-    rm --force \$HOME/install.list
+    rm --force $HOME/install.list
 
 }
 
 function setLocale {
 
     #Setting timezone
-    LOCALZONE=$(timedatectl list-timezones | grep \$1);
+    LOCALZONE=$(timedatectl list-timezones | grep $1);
     ln --symbolic --force /usr/share/zoneinfo/$LOCALZONE /etc/localtime;
     hwclock --systohc;
 
@@ -184,22 +184,22 @@ function setLocale {
 function setHost {
 
     # Editing hostname and hosts file
-    echo \$1 > /etc/hostname;
+    echo $1 > /etc/hostname;
     echo -e "127.0.0.1\tlocalhost" >> /etc/hosts;
     echo -e "::1\tlocalhost" >> /etc/hosts;
-    echo -e "127.0.1.1\t\${1}.localdomain\t\${1}" >> /etc/hosts;
+    echo -e "127.0.1.1\t${1}.localdomain\t${1}" >> /etc/hosts;
 
 }
 
 function ramDiskEnvGrub {
 
     # pulling mkinitcpio.conf
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/mkinitcpio.conf/raw?ref=master" --output /etc/mkinitcpio.conf;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/mkinitcpio.conf/raw?ref=master" --output /etc/mkinitcpio.conf;
     mkinitcpio --preset linux;
 
     # installing grub
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB;
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/default%2Fgrub/raw?ref=master" --output /etc/default/grub;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/default%2Fgrub/raw?ref=master" --output /etc/default/grub;
     grub-mkconfig --output /boot/grub/grub.cfg;
 
 }
@@ -207,10 +207,10 @@ function ramDiskEnvGrub {
 function setUser {
 
     # Creating user
-    useradd --create-home --groups \$1 \$2;
+    useradd --create-home --groups $1 $2;
 
-    echo "\${2} PASSWD!";
-    passwd \$2;
+    echo "${2} PASSWD!";
+    passwd $2;
 
     echo "ROOT PASSWD!";
     passwd;
@@ -222,39 +222,39 @@ function setUser {
 
 function setYay {
 
-    mkdir --parents \$HOME/AUR/yay;
-    git clone https://aur.archlinux.org/yay.git \$HOME/AUR/yay;
-    cd \$HOME/AUR/yay;
+    mkdir --parents $HOME/AUR/yay;
+    git clone https://aur.archlinux.org/yay.git $HOME/AUR/yay;
+    cd $HOME/AUR/yay;
     makepkg --syncdeps --install --rmdeps --clean --noconfirm;
-    cd \$HOME;
+    cd $HOME;
 
 }
 
 function setAURPkgs {
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${$2}/repository/files/pacman.aurpkgs.list/raw?ref=master" --output \$HOME/aur.pkgs.list;
-    yay -Syy --needed --nodiffmenu --answerclean All --removemake --cleanafter - < \$HOME/aur.pkgs.list --noconfirm;
-    rm --force \$HOME/aur.pkgs.list;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${$2}/repository/files/pacman.aurpkgs.list/raw?ref=master" --output $HOME/aur.pkgs.list;
+    yay -Syy --needed --nodiffmenu --answerclean All --removemake --cleanafter - < $HOME/aur.pkgs.list --noconfirm;
+    rm --force $HOME/aur.pkgs.list;
 }
 
 function setGit {
 
     # Git Setup
-    git config --global user.name \$1;
-    git config --global user.email \$2;
+    git config --global user.name $1;
+    git config --global user.email $2;
 
     # Generating ED25519 keyfile
-    ssh-keygen -t ed25519 -C "\${USER} on \${3}";
+    ssh-keygen -t ed25519 -C "${USER} on ${3}";
 
 }
 
 function setDotfiles {
 
-    mkdir \$HOME/.dotfiles;
-    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git \$HOME/.dotfiles;
-    rm --recursive --force \$HOME/.bash*;
-    git --git-dir=\$HOME/.dotfiles --work-tree=\$HOME checkout;
-    git --git-dir=\$HOME/.dotfiles --work-tree=\$HOME config --local status.showUntrackedFiles no;
+    mkdir $HOME/.dotfiles;
+    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git $HOME/.dotfiles;
+    rm --recursive --force $HOME/.bash*;
+    git --git-dir=$HOME/.dotfiles --work-tree=$HOME checkout;
+    git --git-dir=$HOME/.dotfiles --work-tree=$HOME config --local status.showUntrackedFiles no;
 
     git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
 
@@ -269,7 +269,7 @@ function setSnapper {
 
     snapper --config root create-config /;
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/snapper%2Fconfigs%2Froot/raw?ref=master" --output /etc/snapper/configs/root;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/snapper%2Fconfigs%2Froot/raw?ref=master" --output /etc/snapper/configs/root;
 
     chmod 755 /.snapshots;
     systemctl enable snapper-timeline.timer;
@@ -282,15 +282,15 @@ function getConfigs {
 
     mkdir /etc/pacman.d/hooks;
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/pacman.d%2Fhooks%2Fmirrorlist.hook/raw?ref=master" --output /etc/pacman.d/hooks/mirrorlist.hook;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fmirrorlist.hook/raw?ref=master" --output /etc/pacman.d/hooks/mirrorlist.hook;
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/pacman.d%2Fhooks%2Fpkglists.hook/raw?ref=master" --output /etc/pacman.d/hooks/pkglists.hook;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fpkglists.hook/raw?ref=master" --output /etc/pacman.d/hooks/pkglists.hook;
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/pacman.d%2Fhooks%2Frkhunter.hook/raw?ref=master" --output /etc/pacman.d/hooks/rkhunter.hook;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Frkhunter.hook/raw?ref=master" --output /etc/pacman.d/hooks/rkhunter.hook;
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
 
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
 
 }
 
@@ -311,7 +311,7 @@ function setApps {
 
     # rkhunter
     rkhunter --propupd;
-    curl --header "\${1}" "https://gitlab.com/api/v4/projects/\${2}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/rkhunter.timer;
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/rkhunter.timer;
 
 }
 
