@@ -83,4 +83,4 @@ sed --in-place "1i \
     GITUSR=${GITUSR}\n \
     GITMAIL=${GITMAIL}\n \
     HSTNAME=${HSTNAME}\n \
-    "
+    " /mnt/home/$USRNAME/post-install;
