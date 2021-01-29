@@ -1,6 +1,15 @@
 # Arch Linux Simple Installer
-This is a simple installation script for Arch Linux. It's aimed to be minimalistic. It only supports a BTRFS installation.
+This is a simple installation script for Arch Linux. It's aimed to be minimalistic and reduce stress of disk changing or machine hopping.
 
-## Caveats
-- MBR is not yet supported
-- For the moment it does not work out of the box. I still have to find a way to pass the environment to chroot. (Right now you have to re-run getEnvironment inside chroot and then execute the rest of the script which is a chore and will be fixed.)
+***
+
+This script is suitable for both workstations and servers. Consider using a different disk layout ( manual partitioning ) for servers. I will be uploading a few other options at some point in the future.
+
+For the moment it is a BTRFS only install.
+
+
+To-Do's:
+
+- [ ] Add support for more filesystems
+- [ ] Add multiple variants for disk layouting
+- ...
