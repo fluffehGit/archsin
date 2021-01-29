@@ -1,6 +1,7 @@
 # vim: filetype=sh
 
 function systemCheck {
+
     dmesg | grep efi: &> /dev/null;
 
     if [[ $? == 0 ]]; then
@@ -16,15 +17,15 @@ function systemCheck {
 function getEnvironment {
 
         read -p "Country name for pacman mirrors: " COUNTRY;
-        read -p "Closest city for timezone: " CITY;
+        read -p "Timezone city: " CITY;
         read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning ?[A/m]: ' PARTTYPE;
         : ${PARTTYPE:=A};
 
         lsblk --paths;
-        read -p "Installation disk full path (/dev/sdx): " INSTALLDISK;
+        read -p "Full path to the disk the OS will be installed to(/dev/sdx): " INSTALLDISK;
 
-        if [[ -f privateRepoiAPI.token ]]; then
-            read REPOAPITOKEN < privateRepoiAPI.token;
+        if [[ -f privateRepoAPI.token ]]; then
+            read REPOAPITOKEN < privateRepoAPI.token;
         else
             read -p "Input system configuration files repository API token: " REPOAPITOKEN;
         fi
@@ -64,7 +65,7 @@ function setDisk {
 
     # Partitioning disk
     if [[ $PARTTYPE == [Aa]* ]] ; then
-        sed --in-place=.bkp "s#/dev/sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
+        sed --in-place "s#/dev/sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
         sfdisk $INSTALLDISK < efiBTRFS.disk.layout;
     else
         fdisk $INSTALLDISK;
@@ -134,29 +135,6 @@ function createSwap {
     mkswap /swap/swapfile;
     swapon /swap/swapfile;
     echo -e "/swap/swapfile\tnone\tswap\tdefaults\t0 0" >> /etc/fstab;
-
-}
-
-function installPackages {
-
-    echo "Installing packages from list..."
-
-    # pulling pacman.conf
-    curl --header "${1}" \
-        --header "Accept: application/vnd.github.v3.raw" \
-        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.conf?ref=master"
-        --output /etc/pacman.conf;
-
-    # pulling package list
-    curl --header "${1}" \
-        --header "Accept: application/vnd.github.v3.raw" \
-        --remote-name "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs";
-
-    # Installing packages
-    pacman -Syy --needed --noconfirm - < ./pacman.pkgs;
-
-    # Removing install list
-    shred --verbose -u --zero --iterations=3 ./pacman.pkgs
 
 }
 

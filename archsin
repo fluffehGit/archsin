@@ -1,6 +1,6 @@
 #!/bin/bash
 
-########################################
+####################################################################################################
 #
 #                           █████╗ ██████╗  ██████╗██╗  ██╗    ██╗     ██╗███╗   ██╗██╗   ██╗██╗  ██╗
 #                          ██╔══██╗██╔══██╗██╔════╝██║  ██║    ██║     ██║████╗  ██║██║   ██║╚██╗██╔╝
@@ -22,14 +22,14 @@
 # Details: This is the barebones install. It will leave you with a working system.
 #   For quick program installation and configuration use archsin-pinstall
 #
-########################################
+####################################################################################################
 
 # Pulling Disk Layout file
-curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/efiBTRFS.disk.layout";
+curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/efiBTRFS.disk.layout";
 
 # Pulling functions file
-curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/functions";
-source functions
+curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-functions";
+source archsin-functions;
 
 ## Installation sequence
 
@@ -53,39 +53,32 @@ pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs gru
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
 
-cp functions /mnt/root/;
+cp archsin-functions /mnt/root/;
 
 arch-chroot /mnt /bin/bash << EOCHROOT
 
-    source \$HOME/functions;
+    source \$HOME/archsin-functions;
 
     createSwap;
-    installPackages "${REPOAPITOKEN}" "${REPOID}";
     setLocale "${CITY}";
     setHost "${HSTNAME}";
     setInitramfs "${REPOAPITOKEN}" "${REPOID}";
     setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${REPOAPITOKEN}" "${REPOID}";
-    getConfigs "${GITLABHEADER}" "${REPOID}";
 
-    git config --global user.name $GITROOTUSR;
-    git config --global user.email $GITROOTMAIL;
-
-    # Generating ED25519 keyfile
-    #TBD AUTOMATION OF THE BELOW
-    ssh-keygen -t ed25519 -C "\${USER} on ${HSTNAME}";
-
-    shred --verbose -u --zero --iterations=3 \$HOME/functions;
 
 EOCHROOT
 
-rm /mnt/root/functions
+shred --verbose -u --zero --iterations=3 /mnt/root/archsin-functions;
 
-curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/post-install" --output /mnt/home/$USRNAME/post-install;
+curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-pinstall" --output /mnt/home/$USRNAME/archsin-pinstall;
 
-sed --in-place "1i \
-    GITLABHEADER=\"${GITLABHEADER}\"\n \
-    REPOID=\"${REPOID}\"\n \
-    GITUSR=\"${GITUSR}\"\n \
-    GITMAIL=\"${GITMAIL}\"\n \
-    HSTNAME=\"${HSTNAME}\"\n \
-    " /mnt/home/$USRNAME/post-install;
+sed --in-place \
+    "s/#PLACEHOLDER/\
+    GITLABHEADER=\"${GITLABHEADER}\"\n\
+    REPOID=\"${REPOID}\"\n\
+    GITUSR=\"${GITUSR}\"\n\
+    GITMAIL=\"${GITMAIL}\"\n\
+    GITROOTUSR=\"${GITROOTUSR}\"\n\
+    GITROOTMAIL=\"${GITROOTMAIL}\"\n\
+    HSTNAME=\"${HSTNAME}\"\n/" \
+    /mnt/home/$USRNAME/;archsin-pinstall
