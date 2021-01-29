@@ -1,33 +1,41 @@
 # vim: filetype=sh
 
-function getConfigs {
+function installPackages {
 
+    echo "Installing packages from list...";
+
+    # Updating packages
+    pacman -Syyu;
+
+    # pulling pacman.conf
     curl --header "${1}" \
         --header "Accept: application/vnd.github.v3.raw" \
-        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs?ref=master"
-        --output /etc/default/grub;
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.conf?ref=master"
+        --output /etc/pacman.conf;
 
-    mkdir /etc/pacman.d/hooks;
+    # pulling package list
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        --remote-name "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs";
 
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fmirrorlist.hook/raw?ref=master" --output /etc/pacman.d/hooks/mirrorlist.hook;
+    # Installing packages
+    pacman -S --needed --noconfirm - < ./pacman.pkgs;
 
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fpkglists.hook/raw?ref=master" --output /etc/pacman.d/hooks/pkglists.hook;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Frkhunter.hook/raw?ref=master" --output /etc/pacman.d/hooks/rkhunter.hook;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
+    # Removing install list
+    shred --verbose -u --zero --iterations=3 ./pacman.pkgs;
 
 }
 
 function setDotFiles {
+
+    echo "Pulling in configuration files...";
 
     mkdir /home/$1/.dotfiles;
     git clone --bare https://gitlab.com/fluffehLab/dotfiles.git /home/$1/.dotfiles;
     rm --recursive --force /home/$1/.bash*;
     git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 checkout;
     git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 config --local status.showUntrackedFiles no;
+
 }
 
 function setYay {
@@ -42,12 +50,25 @@ function setYay {
 
 function setAURPkgs {
 
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${$2}/repository/files/pacman.aurpkgs.list/raw?ref=master" --output $HOME/aur.pkgs.list;
-    yay -Syy --needed --nodiffmenu --answerclean All --removemake --cleanafter - < $HOME/aur.pkgs.list --noconfirm;
-    rm --force $HOME/aur.pkgs.list;
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        --remote-name "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/aur.pkgs";
+    yay -S --needed --nodiffmenu --answerclean All --removemake --cleanafter - < ./aur.pkgs.list --noconfirm;
+    shred --verbose -u --zero --iterations=3 ./aur.pkgs.list;
 }
 
-function setSnapper {
+function getSystemConfigs {
+    echo "Pulling in configuration files...";
+
+    mkdir /.rootdotfiles;
+    git clone --bare https://${1}:x-oauth-basic@github.com:fluffehGit/${2}.git /.rootdotfiles;
+    git --git-dir=/.rootdotfiles --work-tree=/ checkout;
+    git --git-dir=.rootdotfiles --work-tree=/ config --local status.showUntrackedFiles no;
+}
+
+function setApps {
+
+    echo "Enabling services...";
 
     # Snapper setup
     # Below two lines needed bc snapper create-config creates .snapshots folder
@@ -56,16 +77,10 @@ function setSnapper {
 
     snapper --config root create-config /;
 
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/snapper%2Fconfigs%2Froot/raw?ref=master" --output /etc/snapper/configs/root;
-
     chmod 755 /.snapshots;
     systemctl enable snapper-timeline.timer;
     systemctl enable snapper-cleanup.timer;
     systemctl enable grub-btrfs.path
-
-}
-
-function setApps {
 
     # ClamAV setup
     freshclam;
@@ -75,17 +90,8 @@ function setApps {
     sudo --user=clamav /usr/bin/fangfrisch --conf /etc/fangfrisch/fangfrisch.conf initdb;
     systemctl enable fangfrisch.timer;
 
-    # etckeeper
-    etckeeper init;
-    etckeeper commit "fresh install";
-    systemctl enable etckeeper.timer;
+    # TDB rkhunter
 
-    # rkhunter
-    rkhunter --propupd;
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/systemd%2Fsystem%2Frkhunter.timer/raw?ref=master" --output /etc/sytemd/system/rkhunter.timer;
-    systemctl enable rkhunter.timer.
-
-    systemctl enable NetworkManager;
     systemctl enable bluetooth;
     systemctl enable tlp.service;
 

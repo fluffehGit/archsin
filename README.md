@@ -1,7 +1,7 @@
 # Arch Linux Simple Installer
 This is a simple installation script for Arch Linux. It's aimed to be minimalistic and reduce stress of disk changing or machine hopping.
 
-Execute this command from live ISO: curl·--location·"https://git.io/fluffeh-archsin"·|·/bin/bash
+Execute this command from live ISO: curl --location "https://git.io/fluffeh-archsin" | /bin/bash
 
 ***
 

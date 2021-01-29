@@ -48,7 +48,7 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
@@ -65,6 +65,7 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     setInitramfs "${REPOAPITOKEN}" "${REPOID}";
     setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${REPOAPITOKEN}" "${REPOID}";
 
+    systemctl enable NetworkManager.service
 
 EOCHROOT
 
@@ -74,11 +75,11 @@ curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-pinsta
 
 sed --in-place \
     "s/#PLACEHOLDER/\
-    GITLABHEADER=\"${GITLABHEADER}\"\n\
+    REPOAPITOKEN=\"${REPOAPITOKEN}\"\n\
     REPOID=\"${REPOID}\"\n\
     GITUSR=\"${GITUSR}\"\n\
     GITMAIL=\"${GITMAIL}\"\n\
     GITROOTUSR=\"${GITROOTUSR}\"\n\
     GITROOTMAIL=\"${GITROOTMAIL}\"\n\
     HSTNAME=\"${HSTNAME}\"\n/" \
-    /mnt/home/$USRNAME/;archsin-pinstall
+    /mnt/home/$USRNAME/archsin-pinstall;

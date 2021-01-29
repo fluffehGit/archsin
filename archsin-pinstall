@@ -17,27 +17,51 @@
 #
 ####################################################################################################
 
-#TBD GENERATE GIT FOR root too
+#PLACEHOLDER
+
 # Git Setup
 git config --global user.name $GITUSR;
 git config --global user.email $GITMAIL;
 
 # Generating ED25519 keyfile
-# TBD automating the below
-ssh-keygen -t ed25519 -C "${USER} on ${HSTNAME}";
+mkdir .ssh
+ssh-keygen -f .ssh/id_ed25519 -t ed25519 -C "${USER} on ${HSTNAME}" -N "";
 
+# Pulling post install script functions
+curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-pinstall-functions";
+source ./archsin-pinstall-functions;
+
+# Installing packages from list
+sudo /bin/bash installPackages "${REPOAPITOKEN}" "${REPOID}";
+
+# Installing Yay
 setYay;
-setAURPkgs "${GITLABHEADER}" "${REPOID}";
-setGit "${GITUSR}" "${GITMAIL}" "${HSTNAME}";
-sudo setSnapper "${GITLABHEADER}" "${REPOID}";
-sudo setApps "${GITLABHEADER}" "${REPOID}";
+
+# Installing AUR packages
+setAURPkgs "${REPOAPITOKEN}" "${REPOID}";
+
+# Pulling in configs
+setDotFiles "${USER}"
 
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
 
+sudo /bin/bash << EOSUDO
+
+    git config --global user.name $GITROOTUSR;
+    git config --global user.email $GITROOTMAIL;
+
+    mkdir \$HOME/.ssh;
+    ssh-keygen -f \$HOME/.ssh/id_ed25519 -t ed25519 -C "${USER} on ${HSTNAME}" -N "";
+
+    getSystemConfigs "${REPOAPITOKEN}" "${REPOID}";
+    setApps "${REPOAPITOKEN}" "${REPOID}";
+
+EOSUDO
+
+shred --verbose -u --zero --iterations=3 ./archsin-pinstall-functions;
+
 # Remaining TO-DOs
 echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
-echo "TEST WITH ssh -T git@git{hub,lab}.com";
+echo "TEST WITH ssh -T git@github.com";
 echo "ADD GIT REMOTES!!!";
 echo "ADD root passwd!!!";
-
-#rm -rf ./post-install
