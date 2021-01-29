@@ -16,20 +16,23 @@
 #   ╚══════╝╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝
 #
 # Author: fluffeh
-# v1.0 - 26.12.2020
+# v2.0 - 26-01-2021
 # Source: https://git.io/fluffeh-archsin
-# Install command: curl --location "https://git.io/fluffeh-archsin" --output ./archsin && chmod 744 archsin
+# Install command: curl --location "https://git.io/fluffeh-archsin" | /bin/bash
+# Details: This is the barebones install. It will leave you with a working system.
+#   For quick program installation and configuration use archsin-pinstall
 #
 ########################################
 
 # Pulling Disk Layout file
-curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/efiBTRFS.disk.layout" --output ./efiBTRFS.disk.layout
+curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/efiBTRFS.disk.layout";
 
 # Pulling functions file
-curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/functions" --output ./functions;
+curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/functions";
 source functions
 
 ## Installation sequence
+
 systemCheck;
 
 # Updating the system clock
@@ -57,19 +60,21 @@ arch-chroot /mnt /bin/bash << EOCHROOT
     source \$HOME/functions;
 
     createSwap;
-    installPackages "${GITLABHEADER}" "${REPOID}";
+    installPackages "${REPOAPITOKEN}" "${REPOID}";
     setLocale "${CITY}";
     setHost "${HSTNAME}";
-    ramDiskEnvGrub "${GITLABHEADER}" "${REPOID}";
-    setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${GITLABHEADER}" "${REPOID}";
-    setDotFiles "${USRNAME}";
+    setInitramfs "${REPOAPITOKEN}" "${REPOID}";
+    setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${REPOAPITOKEN}" "${REPOID}";
     getConfigs "${GITLABHEADER}" "${REPOID}";
 
     git config --global user.name $GITROOTUSR;
     git config --global user.email $GITROOTMAIL;
 
     # Generating ED25519 keyfile
+    #TBD AUTOMATION OF THE BELOW
     ssh-keygen -t ed25519 -C "\${USER} on ${HSTNAME}";
+
+    shred --verbose -u --zero --iterations=3 \$HOME/functions;
 
 EOCHROOT
 

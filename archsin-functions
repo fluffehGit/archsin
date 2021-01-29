@@ -1,3 +1,5 @@
+# vim: filetype=sh
+
 function systemCheck {
     dmesg | grep efi: &> /dev/null;
 
@@ -13,10 +15,6 @@ function systemCheck {
 # Setting up install environment;
 function getEnvironment {
 
-#   EXITLOOP=false;
-
-#until $EXITLOOP;
-#do
         read -p "Country name for pacman mirrors: " COUNTRY;
         read -p "Closest city for timezone: " CITY;
         read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning ?[A/m]: ' PARTTYPE;
@@ -25,18 +23,18 @@ function getEnvironment {
         lsblk --paths;
         read -p "Installation disk full path (/dev/sdx): " INSTALLDISK;
 
-        if [[ -f gitlabAPIRead.token ]]; then
-            read GITLABHEADER < gitlabAPIRead.token;
+        if [[ -f privateRepoiAPI.token ]]; then
+            read REPOAPITOKEN < privateRepoiAPI.token;
         else
-            read -p "Input GitLab API token: " GITLABHEADER;
+            read -p "Input system configuration files repository API token: " REPOAPITOKEN;
         fi
 
-        GITLABHEADER="PRIVATE-TOKEN: "$GITLABHEADER;
+        REPOAPITOKEN="Authorization: token ${REPOAPITOKEN}";
 
-        if [[ -f gitlabEtcRepo.ID ]]; then
-            read REPOID < gitlabEtcRepo.ID;
+        if [[ -f privateRepo.name ]]; then
+            read REPOID < privateRepo.name;
         else
-            read -p "Input GitLab /etc repo ID: " REPOID;
+            read -p "Input system configuration files repository name: " REPOID;
         fi
 
         read -p "Machine name (hostname): " HSTNAME;
@@ -49,30 +47,11 @@ function getEnvironment {
         read -p "Git root username: " GITROOTUSR;
         read -p "Git root e-mail: " GITROOTMAIL;
 
-        : << 'TBD'
-        echo -e "You have entered the following data:" \
-            "\nCountry: "$COUNTRY \
-            "\nCity: "$CITY \
-            "\nAuto partitioning? "$AUTOPART \
-            "\nInstallation Disk: "$INSTALLDISK \
-            "\nGitLab token: "$GITLABHEADER \
-            "\nGitLab repo ID: "$REPOID \
-            "\nHostname: "$HSTNAME \
-            "\nUser Name: "$USRNAME \
-            "\nUser Groups: "$USRGROUPS \
-            "\nGit user: "$GITUSR \
-            "\nGit e-mail: "$GITMAIL \
-            "\nGit root user: "$GITROOTUSR \
-            "\nGit root e-mail: "$GITROOTMAIL;
-
-        read -p "Is the above correct?[Y/n]"
-TBD
-
-#done #until $EXITLOOP;
-
 }
 
 function setMirrors {
+
+    echo "Setting up mirrors...";
 
     pacman -Syy --noconfirm --needed reflector;
     reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https,rsync;
@@ -80,6 +59,8 @@ function setMirrors {
 }
 
 function setDisk {
+
+    echo "Setting up disk partitions...";
 
     # Partitioning disk
     if [[ $PARTTYPE == [Aa]* ]] ; then
@@ -137,38 +118,51 @@ function setDisk {
 
 function createSwap {
 
-    # Creating Swap File
-    truncate --size=0 /swap/swapfile;
+    echo "Creating swap file...";
 
-    # Disablin compression
+    # Making Swap File as big as RAM in size
+    dd if=/dev/zero \
+        of=/swap/swapfile \
+        bs=1K \
+        count=$(cat /proc/meminfo | awk 'NR==1{print $2}') \
+        status=progress;
+
+    # Disabling compression
     btrfs property set /swap/swapfile compression none;
-
-    # Making Swap File 4G in size
-    dd if=/dev/zero of=/swap/swapfile bs=1G count=4 status=progress;
 
     chmod 600 /swap/swapfile;
     mkswap /swap/swapfile;
     swapon /swap/swapfile;
-    echo "/swap/swapfile none swap defaults 0 0" >> /etc/fstab;
+    echo -e "/swap/swapfile\tnone\tswap\tdefaults\t0 0" >> /etc/fstab;
 
 }
 
 function installPackages {
 
+    echo "Installing packages from list..."
+
     # pulling pacman.conf
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.conf/raw?ref=master" --output /etc/pacman.conf;
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.conf?ref=master"
+        --output /etc/pacman.conf;
 
     # pulling package list
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.expkgs.list/raw?ref=master" --output $HOME/install.list;
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        --remote-name "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs";
+
     # Installing packages
-    pacman -Syy --needed --noconfirm - < $HOME/install.list;
+    pacman -Syy --needed --noconfirm - < ./pacman.pkgs;
 
     # Removing install list
-    rm --force $HOME/install.list
+    shred --verbose -u --zero --iterations=3 ./pacman.pkgs
 
 }
 
 function setLocale {
+
+    echo "Setting up locale...";
 
     #Setting timezone
     LOCALZONE=$(timedatectl list-timezones | grep $1);
@@ -184,6 +178,8 @@ function setLocale {
 
 function setHost {
 
+    echo "Setting up machine name...";
+
     # Editing hostname and hosts file
     echo $1 > /etc/hostname;
     echo -e "127.0.0.1\tlocalhost" >> /etc/hosts;
@@ -192,55 +188,66 @@ function setHost {
 
 }
 
-function ramDiskEnvGrub {
+function setInitramfs {
+
+    echo "Setting up initramfs...";
 
     # pulling mkinitcpio.conf
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/mkinitcpio.conf/raw?ref=master" --output /etc/mkinitcpio.conf;
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/mkinitcpio.conf?ref=master"
+        --output /etc/mkinitcpio.conf;
+
     mkinitcpio --preset linux;
 
     # installing grub
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB;
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/default%2Fgrub/raw?ref=master" --output /etc/default/grub;
+    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_GRUB;
+
+    # pulling grub default
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs?ref=master"
+        --output /etc/default/grub;
+
+    # getting UUID of BTRFS partition where Swap file is located
+    SWAPUUID=$(findmnt --noheadings --output UUID --target /swap/swapfile);
+
+    # pulling in program that calculates file physical offset for BTRFS
+    curl --remote-name "https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c";
+
+    # compiling
+    gcc -O2 -o btrfs_map_physical btrfs_map_physical.c;
+
+    # getting offset
+    SWAPOFFSET=$(echo "\
+        $(./btrfs_map_physical.c /swap/swapfile | awk 'NR==2 {print $9}') \
+        / $(getconf PAGESIZE)" \
+        | bc);
+
+    # removing old settings
+    sed --in-place=.bkp '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
+
+    # adding new ones
+    sed --in-place=.bkp "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"/" /etc/default/grub;
+
     grub-mkconfig --output /boot/grub/grub.cfg;
 
+    shred --verbose -u --zero --iterations=3 btrfs_map_physical btrfs_map_physical.c;
 }
 
 function setUser {
+
+    echo "Creating system user...";
 
     # Creating user
     useradd --create-home --groups $1 $2;
 
     chpasswd <<< $2:$3;
 
-    mv /etc/sudoers /etc/sudoers.bkp
-    curl --header "${4}" "https://gitlab.com/api/v4/projects/${5}/repository/files/sudoers/raw?ref=master" --output /etc/sudoers;
+    mv /etc/sudoers /etc/sudoers.bkp;
+
+    sed 's/^#\s*\(%wheel\s*ALL=(ALL)\s*ALL\)/\1/';
+
     visudo --check --file=/etc/sudoers;
 
 }
-
-function setDotFiles {
-
-    mkdir /home/$1/.dotfiles;
-    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git /home/$1/.dotfiles;
-    rm --recursive --force /home/$1/.bash*;
-    git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 checkout;
-    git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 config --local status.showUntrackedFiles no;
-}
-
-function getConfigs {
-
-    mkdir /etc/pacman.d/hooks;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fmirrorlist.hook/raw?ref=master" --output /etc/pacman.d/hooks/mirrorlist.hook;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fpkglists.hook/raw?ref=master" --output /etc/pacman.d/hooks/pkglists.hook;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Frkhunter.hook/raw?ref=master" --output /etc/pacman.d/hooks/rkhunter.hook;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
-
-    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
-
-}
-
-# vim: filetype=sh

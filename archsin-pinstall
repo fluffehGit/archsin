@@ -1,0 +1,24 @@
+#!/bin/bash
+# Git Setup
+git config --global user.name $GITUSR;
+git config --global user.email $GITMAIL;
+
+# Generating ED25519 keyfile
+# TBD automating the below
+ssh-keygen -t ed25519 -C "${USER} on ${HSTNAME}";
+
+setYay;
+setAURPkgs "${GITLABHEADER}" "${REPOID}";
+setGit "${GITUSR}" "${GITMAIL}" "${HSTNAME}";
+sudo setSnapper "${GITLABHEADER}" "${REPOID}";
+sudo setApps "${GITLABHEADER}" "${REPOID}";
+
+git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
+
+# Remaining TO-DOs
+echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
+echo "TEST WITH ssh -T git@git{hub,lab}.com";
+echo "ADD GIT REMOTES!!!";
+echo "ADD root passwd!!!";
+
+#rm -rf ./post-install

@@ -1,4 +1,34 @@
-#!/bin/bash
+# vim: filetype=sh
+
+function getConfigs {
+
+    curl --header "${1}" \
+        --header "Accept: application/vnd.github.v3.raw" \
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs?ref=master"
+        --output /etc/default/grub;
+
+    mkdir /etc/pacman.d/hooks;
+
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fmirrorlist.hook/raw?ref=master" --output /etc/pacman.d/hooks/mirrorlist.hook;
+
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Fpkglists.hook/raw?ref=master" --output /etc/pacman.d/hooks/pkglists.hook;
+
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/pacman.d%2Fhooks%2Frkhunter.hook/raw?ref=master" --output /etc/pacman.d/hooks/rkhunter.hook;
+
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/rkhunter.conf.local/raw?ref=master" --output /etc/rkhunter.conf.local;
+
+    curl --header "${1}" "https://gitlab.com/api/v4/projects/${2}/repository/files/tlp.conf/raw?ref=master" --output /etc/tlp.conf;
+
+}
+
+function setDotFiles {
+
+    mkdir /home/$1/.dotfiles;
+    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git /home/$1/.dotfiles;
+    rm --recursive --force /home/$1/.bash*;
+    git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 checkout;
+    git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 config --local status.showUntrackedFiles no;
+}
 
 function setYay {
 
@@ -60,26 +90,3 @@ function setApps {
     systemctl enable tlp.service;
 
 }
-
-# Git Setup
-git config --global user.name $GITUSR;
-git config --global user.email $GITMAIL;
-
-# Generating ED25519 keyfile
-ssh-keygen -t ed25519 -C "${USER} on ${HSTNAME}";
-
-setYay;
-setAURPkgs "${GITLABHEADER}" "${REPOID}";
-setGit "${GITUSR}" "${GITMAIL}" "${HSTNAME}";
-sudo setSnapper "${GITLABHEADER}" "${REPOID}";
-sudo setApps "${GITLABHEADER}" "${REPOID}";
-
-git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim;
-
-# Remaining TO-DOs
-echo "cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard";
-echo "TEST WITH ssh -T git@git{hub,lab}.com";
-echo "ADD GIT REMOTES!!!";
-echo "ADD root passwd!!!";
-
-#rm -rf ./post-install
