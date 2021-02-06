@@ -48,7 +48,7 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet bc;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;

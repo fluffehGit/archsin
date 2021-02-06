@@ -148,7 +148,7 @@ function setLocale {
     hwclock --systohc;
 
     # Locale
-    sed --in-place=.bkp 's/#en_US.UTF-8*/en_US.UTF-8/' /etc/locale.gen;
+    sed --in-place 's/#en_US.UTF-8*/en_US.UTF-8/' /etc/locale.gen;
     locale-gen;
     echo LANG=en_US.UTF-8 >> /etc/locale.conf;
 
@@ -203,10 +203,10 @@ function setInitramfs {
         | bc);
 
     # removing old settings
-    sed --in-place=.bkp '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
+    sed --in-place '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
 
     # adding new ones
-    sed --in-place=.bkp "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"/" /etc/default/grub;
+    sed --in-place "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"/" /etc/default/grub;
 
     grub-mkconfig --output /boot/grub/grub.cfg;
 
@@ -222,9 +222,7 @@ function setUser {
 
     chpasswd <<< $2:$3;
 
-    mv /etc/sudoers /etc/sudoers.bkp;
-
-    sed 's/^#\s*\(%wheel\s*ALL=(ALL)\s*ALL\)/\1/';
+    sed --in-palce 's/^#\s*\(%wheel\s*ALL=(ALL)\s*ALL\)/\1/' /etc/sudoers;
 
     visudo --check --file=/etc/sudoers;
 
