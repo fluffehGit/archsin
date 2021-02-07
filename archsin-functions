@@ -184,7 +184,7 @@ function setInitramfs {
     # pulling grub default
     curl --header "${1}" \
         --header "Accept: application/vnd.github.v3.raw" \
-        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.d/pacman.pkgs?ref=master" \
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/default/grub?ref=master" \
         --output /etc/default/grub;
 
     # getting UUID of BTRFS partition where Swap file is located
