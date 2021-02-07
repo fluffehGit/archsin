@@ -1,5 +1,7 @@
 # vim: filetype=sh
 
+WHITE="\e\[01;37m";
+
 function systemCheck {
 
     dmesg | grep efi: &> /dev/null;
@@ -52,7 +54,7 @@ function getEnvironment {
 
 function setMirrors {
 
-    echo "Setting up mirrors...";
+    echo -e "\n${WHITE}Setting up mirrors...\n";
 
     pacman -Syy --noconfirm --needed reflector;
     reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https,rsync;
@@ -61,7 +63,7 @@ function setMirrors {
 
 function setDisk {
 
-    echo "Setting up disk partitions...";
+    echo -e "\n${WHITE}Setting up disk partitions...\n";
 
     # Partitioning disk
     if [[ $PARTTYPE == [Aa]* ]] ; then
@@ -119,7 +121,7 @@ function setDisk {
 
 function createSwap {
 
-    echo "Creating swap file...";
+    echo -e "\n${WHITE}Creating swap file...\n";
 
     # Making Swap File as big as RAM in size
     dd if=/dev/zero \
@@ -140,7 +142,7 @@ function createSwap {
 
 function setLocale {
 
-    echo "Setting up locale...";
+    echo -e "\n${WHITE}Setting up locale...\n";
 
     #Setting timezone
     LOCALZONE=$(timedatectl list-timezones | grep $1);
@@ -156,7 +158,7 @@ function setLocale {
 
 function setHost {
 
-    echo "Setting up machine name...";
+    echo -e "\n${WHITE}Setting up machine name...\n";
 
     # Editing hostname and hosts file
     echo $1 > /etc/hostname;
@@ -168,7 +170,7 @@ function setHost {
 
 function setInitramfs {
 
-    echo "Setting up initramfs...";
+    echo -e "\n${WHITE}Setting up initramfs...\n";
 
     # pulling mkinitcpio.conf
     curl --header "${1}" \
@@ -204,7 +206,6 @@ function setInitramfs {
 
     # removing old settings
     sed --in-place '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
-
     # adding new ones
     sed --in-place "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"/" /etc/default/grub;
 
@@ -215,15 +216,12 @@ function setInitramfs {
 
 function setUser {
 
-    echo "Creating system user...";
+    echo -e "\n${WHITE}Creating system user...\n";
 
     # Creating user
     useradd --create-home --groups $1 $2;
-
     chpasswd <<< $2:$3;
-
-    sed --in-palce 's/^#\s*\(%wheel\s*ALL=(ALL)\s*ALL\)/\1/' /etc/sudoers;
-
+    sed --in-place 's/^#\s*\(%wheel\s*ALL=(ALL)\s*ALL\)/\1/' /etc/sudoers;
     visudo --check --file=/etc/sudoers;
 
 }
