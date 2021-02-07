@@ -10,7 +10,7 @@ function installPackages {
     # pulling pacman.conf
     curl --header "${1}" \
         --header "Accept: application/vnd.github.v3.raw" \
-        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.conf?ref=master"
+        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/pacman.conf?ref=master" \
         --output /etc/pacman.conf;
 
     # pulling package list
