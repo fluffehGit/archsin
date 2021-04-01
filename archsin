@@ -48,14 +48,14 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet bc;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet bc vim;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
 
 cp archsin-functions /mnt/root/;
 
-arch-chroot /mnt /bin/bash << EOCHROOT
+arch-chroot /mnt /bin/bash -- << EOCHROOT
 
     source \$HOME/archsin-functions;
 
@@ -72,6 +72,9 @@ EOCHROOT
 shred --verbose -u --zero --iterations=3 /mnt/root/archsin-functions;
 
 curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-pinstall" --output /mnt/home/$USRNAME/archsin-pinstall;
+
+chmod 744 /mnt/home/$USRNAME/archsin-pinstall;
+chown $USRNAME:$USRNAME /mnt/home/$USRNAME/archsin-pinstall;
 
 sed --in-place \
     "s/#PLACEHOLDER/\

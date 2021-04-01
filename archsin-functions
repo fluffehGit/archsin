@@ -200,7 +200,7 @@ function setInitramfs {
 
     # getting offset
     SWAPOFFSET=$(echo "\
-        $(./btrfs_map_physical.c /swap/swapfile | awk 'NR==2 {print $9}') \
+        $(./btrfs_map_physical /swap/swapfile | awk 'NR==2 {print $9}') \
         / $(getconf PAGESIZE)" \
         | bc);
 
