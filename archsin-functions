@@ -70,6 +70,7 @@ function setDisk {
         sed --in-place "s#/dev/sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
         sfdisk $INSTALLDISK < efiBTRFS.disk.layout;
     else
+        echo -e "\n${WHITE}The script assumes you will be creating at least 2 partitions!!"
         fdisk $INSTALLDISK;
     fi
 
