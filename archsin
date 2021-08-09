@@ -33,6 +33,7 @@ source archsin-functions;
 
 ## Installation sequence
 
+#Checking BIOS type
 systemCheck;
 
 # Updating the system clock

@@ -57,7 +57,7 @@ function setMirrors {
     echo -e "\n${WHITE}Setting up mirrors...\n";
 
     pacman -Syy --noconfirm --needed reflector;
-    reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https,rsync;
+    reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https;
 
 }
 
@@ -114,7 +114,7 @@ function setDisk {
     mount --options subvol=@swap /dev/sda2 /mnt/swap;
     mount --options subvol=@var /dev/sda2 /mnt/var;
 
-    # Disableing CoW on swap and var
+    # Disabling CoW on swap and var
     chattr +C /mnt/swap;
     chattr +C /mnt/var;
 
