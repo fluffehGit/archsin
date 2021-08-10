@@ -4,7 +4,7 @@ WHITE="\e\[01;37m";
 
 function systemCheck {
 
-    dmesg | grep efi: &> /dev/null;
+    dmesg | grep efifb: &> /dev/null;
 
     if [[ $? == 0 ]]; then
         echo -e "EFI detected.\nInstallation script started!"
@@ -24,7 +24,16 @@ function getEnvironment {
         : ${PARTTYPE:=A};
 
         lsblk --paths;
-        read -p "Full path to the disk the OS will be installed to(/dev/sdx): " INSTALLDISK;
+        read -p "Full path to the disk the OS will be installed to (/dev/sdx | /dev/nvme0nx): " INSTALLDISK;
+
+        if [[ $INSTALLDISK == *[nvme]* ]]; then
+            DISKLAYOUT=nvme-efiBTRFS.disk.layout;
+        else
+            DISKLAYOUT=efiBTRFS.disk.layout;
+        fi
+
+        #Pulling in Disk Layout file
+        curl·--remote-name·"https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
         if [[ -f privateRepoAPI.token ]]; then
             read REPOAPITOKEN < privateRepoAPI.token;
