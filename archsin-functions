@@ -28,6 +28,8 @@ function getEnvironment {
 
         if [[ $INSTALLDISK == *[nvme]* ]]; then
             DISKLAYOUT=nvme-efiBTRFS.disk.layout;
+            DISKPARTITION1="${INSTALLDISK}p1";
+            DISKPARTITION2="${INSTALLDISK}p2";
         else
             DISKLAYOUT=efiBTRFS.disk.layout;
         fi
@@ -84,13 +86,13 @@ function setDisk {
     fi
 
     # Formatting efi partition
-    mkfs.fat -F32 /dev/sda1;
+    mkfs.fat -F32 $DISKPARTITION1;
 
     # Formatting main partition as BTRFS
-    mkfs.btrfs /dev/sda2;
+    mkfs.btrfs $DISKPARTITION2;
 
     # Mounting main partition
-    mount /dev/sda2 /mnt;
+    mount $DISKPARTITION2 /mnt;
 
     # Creating BTRFS Subvolumes
     btrfs subvolume create /mnt/@root;
@@ -106,13 +108,13 @@ function setDisk {
     umount /mnt;
 
     # Mounting BTRFS @root Subvolume
-    mount --options noatime,compress=zstd,space_cache,subvol=@root /dev/sda2 /mnt;
+    mount --options noatime,compress=zstd,space_cache,subvol=@root $DISKPARTITION2 /mnt;
 
     # Creating mount directories for all subvolumes
     mkdir /mnt/{boot,home,var,srv,opt,tmp,swap,.snapshots};
 
     # Mounting boot partition
-    mount /dev/sda1 /mnt/boot;
+    mount $DISKPARTITION2 /mnt/boot;
 
     # Mounting Subvolumes
     mount --options noatime,compress=zstd,space_cache,subvol=@home /dev/sda2 /mnt/home;
