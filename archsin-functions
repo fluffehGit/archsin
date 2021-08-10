@@ -33,7 +33,7 @@ function getEnvironment {
         fi
 
         #Pulling in Disk Layout file
-        curl·--remote-name·"https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
+        curl·--remote-name·"hhttps://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
         if [[ -f privateRepoAPI.token ]]; then
             read REPOAPITOKEN < privateRepoAPI.token;
