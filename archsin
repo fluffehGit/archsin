@@ -24,9 +24,6 @@
 #
 ####################################################################################################
 
-# Pulling Disk Layout file
-curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/efiBTRFS.disk.layout";
-
 # Pulling functions file
 curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-functions";
 source archsin-functions;
