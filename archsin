@@ -19,7 +19,6 @@
 # Author: fluffeh
 # v2.0 - 26-01-2021
 # Source: https://git.io/fluffeh-archsin
-# Install command: curl --location "https://git.io/fluffeh-archsin" | /bin/bash
 # Details: This is the barebones install. It will leave you with a working system.
 #   For quick program installation and configuration use archsin-pinstall
 #
