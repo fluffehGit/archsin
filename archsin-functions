@@ -38,7 +38,6 @@ function getEnvironment {
         #Pulling in Disk Layout file
         curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
-<<blockComment
         if [[ -f privateRepoAPI.token ]]; then
             read REPOAPITOKEN < privateRepoAPI.token;
         else
@@ -52,7 +51,6 @@ function getEnvironment {
         else
             read -p "Input system configuration files repository name: " REPOID;
         fi
-blockComment
 
         read -p "Machine name (hostname): " HSTNAME;
         read -p "Machine username: " USRNAME;
