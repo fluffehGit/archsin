@@ -35,7 +35,7 @@ function getEnvironment {
         fi
 
         #Pulling in Disk Layout file
-        curl·--remote-name·"hhttps://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
+        curl·--remote-name·"https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
         if [[ -f privateRepoAPI.token ]]; then
             read REPOAPITOKEN < privateRepoAPI.token;
@@ -78,8 +78,8 @@ function setDisk {
 
     # Partitioning disk
     if [[ $PARTTYPE == [Aa]* ]] ; then
-        sed --in-place "s#/dev/sdx#${INSTALLDISK}#" efiBTRFS.disk.layout;
-        sfdisk $INSTALLDISK < efiBTRFS.disk.layout;
+        sed --in-place "s#/dev/sdx#${INSTALLDISK}#" $DISKLAYOUT;
+        sfdisk $INSTALLDISK < $DISKLAYOUT;
     else
         echo -e "\n${WHITE}The script assumes you will be creating at least 2 partitions!!"
         fdisk $INSTALLDISK;
