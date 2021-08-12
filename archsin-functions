@@ -1,6 +1,7 @@
 # vim: filetype=sh
 
 WHITE="\e[01;37m";
+NC="\e[0m";
 
 function systemCheck {
 
@@ -37,6 +38,7 @@ function getEnvironment {
         #Pulling in Disk Layout file
         curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
+<<blockComment
         if [[ -f privateRepoAPI.token ]]; then
             read REPOAPITOKEN < privateRepoAPI.token;
         else
@@ -50,24 +52,26 @@ function getEnvironment {
         else
             read -p "Input system configuration files repository name: " REPOID;
         fi
+blockComment
 
         read -p "Machine name (hostname): " HSTNAME;
         read -p "Machine username: " USRNAME;
         read -p "${USRNAME} password: " USRPASSWD;
         read -p "${USRNAME} groups (comma separated): " USRGROUPS;
         USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
-:'
+
+<<blockComment
         read -p "Git username: " GITUSR;
         read -p "Git e-mail: " GITMAIL;
         read -p "Git root username: " GITROOTUSR;
         read -p "Git root e-mail: " GITROOTMAIL;
-'
+blockComment
 
 }
 
 function setMirrors {
 
-    echo -e "\n${WHITE}Setting up mirrors...\n";
+    echo -e "\n${WHITE}Setting up mirrors...${NC}\n";
 
     pacman -Syy --noconfirm --needed reflector;
     reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https;
@@ -76,14 +80,14 @@ function setMirrors {
 
 function setDisk {
 
-    echo -e "\n${WHITE}Setting up disk partitions...\n";
+    echo -e "\n${WHITE}Setting up disk partitions...${NC}\n";
 
     # Partitioning disk
     if [[ $PARTTYPE == [Aa]* ]] ; then
         sed --in-place "s#/dev/sdx#${INSTALLDISK}#" $DISKLAYOUT;
         sfdisk $INSTALLDISK < $DISKLAYOUT;
     else
-        echo -e "\n${WHITE}The script assumes you will be creating at least 2 partitions!!"
+        echo -e "\n${WHITE}The script assumes you will be creating at least 2 partitions!!${NC}"
         fdisk $INSTALLDISK;
     fi
 
@@ -135,7 +139,7 @@ function setDisk {
 
 function createSwap {
 
-    echo -e "\n${WHITE}Creating swap file...\n";
+    echo -e "\n${WHITE}Creating swap file...${NC}\n";
 
     # Making Swap File as big as RAM in size
     dd if=/dev/zero \
@@ -156,7 +160,7 @@ function createSwap {
 
 function setLocale {
 
-    echo -e "\n${WHITE}Setting up locale...\n";
+    echo -e "\n${WHITE}Setting up locale...${NC}\n";
 
     #Setting timezone
     LOCALZONE=$(timedatectl list-timezones | grep $1);
@@ -172,7 +176,7 @@ function setLocale {
 
 function setHost {
 
-    echo -e "\n${WHITE}Setting up machine name...\n";
+    echo -e "\n${WHITE}Setting up machine name...${NC}\n";
 
     # Editing hostname and hosts file
     echo $1 > /etc/hostname;
@@ -184,7 +188,7 @@ function setHost {
 
 function setInitramfs {
 
-    echo -e "\n${WHITE}Setting up initramfs...\n";
+    echo -e "\n${WHITE}Setting up initramfs...${NC}\n";
 
     # pulling mkinitcpio.conf
     curl --header "${1}" \
@@ -230,7 +234,7 @@ function setInitramfs {
 
 function setUser {
 
-    echo -e "\n${WHITE}Creating system user...\n";
+    echo -e "\n${WHITE}Creating system user...${NC}\n";
 
     # Creating user
     useradd --create-home --groups $1 $2;
