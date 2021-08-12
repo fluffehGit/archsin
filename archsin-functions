@@ -1,6 +1,6 @@
 # vim: filetype=sh
 
-WHITE="\e\[01;37m";
+WHITE="\e[01;37m";
 
 function systemCheck {
 
@@ -35,7 +35,7 @@ function getEnvironment {
         fi
 
         #Pulling in Disk Layout file
-        curl·--remote-name·"https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
+        curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
         if [[ -f privateRepoAPI.token ]]; then
             read REPOAPITOKEN < privateRepoAPI.token;
@@ -56,10 +56,12 @@ function getEnvironment {
         read -p "${USRNAME} password: " USRPASSWD;
         read -p "${USRNAME} groups (comma separated): " USRGROUPS;
         USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
+:'
         read -p "Git username: " GITUSR;
         read -p "Git e-mail: " GITMAIL;
         read -p "Git root username: " GITROOTUSR;
         read -p "Git root e-mail: " GITROOTMAIL;
+'
 
 }
 

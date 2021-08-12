@@ -67,13 +67,10 @@ arch-chroot /mnt /bin/bash -- << EOCHROOT
 
 EOCHROOT
 
+
 shred --verbose -u --zero --iterations=3 /mnt/root/archsin-functions;
 
-curl "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-pinstall" --output /mnt/home/$USRNAME/archsin-pinstall;
-
-chmod 744 /mnt/home/$USRNAME/archsin-pinstall;
-chown $USRNAME:$USRNAME /mnt/home/$USRNAME/archsin-pinstall;
-
+:'
 sed --in-place \
     "s/#PLACEHOLDER/\
     REPOAPITOKEN=\"${REPOAPITOKEN}\"\n\
@@ -84,3 +81,4 @@ sed --in-place \
     GITROOTMAIL=\"${GITROOTMAIL}\"\n\
     HSTNAME=\"${HSTNAME}\"\n/" \
     /mnt/home/$USRNAME/archsin-pinstall;
+'
