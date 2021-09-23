@@ -86,6 +86,7 @@ function setDisk {
         sfdisk $INSTALLDISK < $DISKLAYOUT;
     else
         echo -e "\n${WHITE}The script assumes you will be creating at least 2 partitions!!${NC}"
+        read -p "Press Return to continue!" RTRN;
         fdisk $INSTALLDISK;
     fi
 
@@ -93,7 +94,7 @@ function setDisk {
     mkfs.fat -F32 $DISKPARTITION1;
 
     # Formatting main partition as BTRFS
-    mkfs.btrfs $DISKPARTITION2;
+    mkfs.btrfs --force $DISKPARTITION2;
 
     # Mounting main partition
     mount $DISKPARTITION2 /mnt;
@@ -118,16 +119,16 @@ function setDisk {
     mkdir /mnt/{boot,home,var,srv,opt,tmp,swap,.snapshots};
 
     # Mounting boot partition
-    mount $DISKPARTITION2 /mnt/boot;
+    mount $DISKPARTITION1 /mnt/boot;
 
     # Mounting Subvolumes
-    mount --options noatime,compress=zstd,space_cache,subvol=@home /dev/sda2 /mnt/home;
-    mount --options noatime,compress=zstd,space_cache,subvol=@srv /dev/sda2 /mnt/srv;
-    mount --options noatime,compress=zstd,space_cache,subvol=@tmp /dev/sda2 /mnt/tmp;
-    mount --options noatime,compress=zstd,space_cache,subvol=@opt /dev/sda2 /mnt/opt;
-    mount --options noatime,compress=zstd,space_cache,subvol=@snapshots /dev/sda2 /mnt/.snapshots;
-    mount --options subvol=@swap /dev/sda2 /mnt/swap;
-    mount --options subvol=@var /dev/sda2 /mnt/var;
+    mount --options noatime,compress=zstd,space_cache,subvol=@home $DISPARTITION2 /mnt/home;
+    mount --options noatime,compress=zstd,space_cache,subvol=@srv $DISPARTITION2 /mnt/srv;
+    mount --options noatime,compress=zstd,space_cache,subvol=@tmp $DISPARTITION2 /mnt/tmp;
+    mount --options noatime,compress=zstd,space_cache,subvol=@opt $DISPARTITION2 /mnt/opt;
+    mount --options noatime,compress=zstd,space_cache,subvol=@snapshots $DISPARTITION2 /mnt/.snapshots;
+    mount --options subvol=@swap $DISPARTITION2 /mnt/swap;
+    mount --options subvol=@var $DISPARTITION2 /mnt/var;
 
     # Disabling CoW on swap and var
     chattr +C /mnt/swap;
@@ -166,9 +167,10 @@ function setLocale {
     hwclock --systohc;
 
     # Locale
-    sed --in-place 's/#en_US.UTF-8*/en_US.UTF-8/' /etc/locale.gen;
+    #sed --in-place 's/#en_US.UTF-8*/en_US.UTF-8/' /etc/locale.gen;
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
     locale-gen;
-    echo LANG=en_US.UTF-8 >> /etc/locale.conf;
+    echo "LANG=en_US.UTF-8" >> /etc/locale.conf;
 
 }
 
@@ -223,7 +225,7 @@ function setInitramfs {
     # removing old settings
     sed --in-place '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
     # adding new ones
-    sed --in-place "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"/" /etc/default/grub;
+    sed --in-place "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"\n#replace_in_script/" /etc/default/grub;
 
     grub-mkconfig --output /boot/grub/grub.cfg;
 
