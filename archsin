@@ -24,6 +24,15 @@
 #
 ####################################################################################################
 
+#exiting if any error encountered
+set -e;
+
+#keep track of the last executed command
+trap 'lastCommand=$currentCommand; currentCommand=$BASH_COMMAND' DEBUG;
+#print error message before exitting
+trap 'echo "\"${lastCommand}\" command failed with exit code $?."' EXIT;
+
+
 # Pulling functions file
 curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-functions";
 source archsin-functions;
@@ -46,7 +55,7 @@ setMirrors;
 setDisk;
 
 # Installing essentials
-pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet bc vim;
+pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs efibootmgr networkmanager network-manager-applet bc vim git;
 
 # Generating FSTab
 genfstab -U /mnt >> /mnt/etc/fstab;
