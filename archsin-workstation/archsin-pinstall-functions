@@ -31,18 +31,18 @@ function setDotFiles {
     echo "Pulling in configuration files...";
 
     mkdir /home/$1/.dotfiles;
-    git clone --bare https://gitlab.com/fluffehLab/dotfiles.git /home/$1/.dotfiles;
+    git clone --bare https://github.com/fluffehGit/dotfiles.git /home/$1/.dotfiles;
     rm --recursive --force /home/$1/.bash*;
     git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 checkout;
     git --git-dir=/home/$1/.dotfiles --work-tree=/home/$1 config --local status.showUntrackedFiles no;
 
 }
 
-function setYay {
+function setAURWrapper {
 
-    mkdir --parents $HOME/AUR/yay;
-    git clone https://aur.archlinux.org/yay.git $HOME/AUR/yay;
-    cd $HOME/AUR/yay;
+    mkdir --parents $HOME/AUR/paru;
+    git clone https://aur.archlinux.org/paru.git $HOME/AUR/paru;
+    cd $HOME/AUR/paru;
     makepkg --syncdeps --install --rmdeps --clean --noconfirm;
     cd $HOME;
 
@@ -61,9 +61,12 @@ function getSystemConfigs {
     echo "Pulling in configuration files...";
 
     mkdir /.rootdotfiles;
-    git clone --bare https://${1}:x-oauth-basic@github.com:fluffehGit/${2}.git /.rootdotfiles;
+    git clone --bare https://${1}:x-oauth-basic@github.com/fluffehGit/${2}.git /.rootdotfiles;
+
+    #CONFLICTING FILES TO BE ADDRESSED (possibly via gists?)
+
     git --git-dir=/.rootdotfiles --work-tree=/ checkout;
-    git --git-dir=.rootdotfiles --work-tree=/ config --local status.showUntrackedFiles no;
+    git --git-dir=/.rootdotfiles --work-tree=/ config --local status.showUntrackedFiles no;
 }
 
 function setApps {

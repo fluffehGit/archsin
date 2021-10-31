@@ -17,7 +17,20 @@
 #
 ####################################################################################################
 
-#PLACEHOLDER
+read -p "Please enter your Gir username: " GITUSR;
+read -p "Please enter your Git E-Mail: " GITMAIL;
+
+if [[ -f privateRepoAPI.token ]]; then
+    read REPOAPITOKEN < privateRepoAPI.token;
+else
+    read -p "Input system configuration files repository API token: " REPOAPITOKEN;
+fi
+
+if [[ -f privateRepo.name ]]; then
+    read REPOID < privateRepo.name
+else
+    read -p "Input system configuration files repository name: " REPOID;
+fi
 
 # Git Setup
 git config --global user.name $GITUSR;
@@ -25,7 +38,7 @@ git config --global user.email $GITMAIL;
 
 # Generating ED25519 keyfile
 mkdir .ssh
-ssh-keygen -f .ssh/id_ed25519 -t ed25519 -C "${USER} on ${HSTNAME}" -N "";
+ssh-keygen -f .ssh/id_ed25519 -t ed25519 -C "${USER} on ${HOSTNAME}" -N "";
 
 # Pulling post install script functions
 curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-pinstall-functions";
@@ -35,7 +48,7 @@ source ./archsin-pinstall-functions;
 sudo /bin/bash installPackages "${REPOAPITOKEN}" "${REPOID}";
 
 # Installing Yay
-setYay;
+setAURWrapper;
 
 # Installing AUR packages
 setAURPkgs "${REPOAPITOKEN}" "${REPOID}";
@@ -51,7 +64,7 @@ sudo /bin/bash << EOSUDO
     git config --global user.email $GITROOTMAIL;
 
     mkdir \$HOME/.ssh;
-    ssh-keygen -f \$HOME/.ssh/id_ed25519 -t ed25519 -C "${USER} on ${HSTNAME}" -N "";
+    ssh-keygen -f \$HOME/.ssh/id_ed25519 -t ed25519 -C "${USER} on ${HOSTNAME}" -N "";
 
     getSystemConfigs "${REPOAPITOKEN}" "${REPOID}";
     setApps "${REPOAPITOKEN}" "${REPOID}";
