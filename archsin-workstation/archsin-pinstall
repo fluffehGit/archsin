@@ -71,6 +71,8 @@ sudo /bin/bash << EOSUDO
 
 EOSUDO
 
+activateNumlock;
+
 shred --verbose -u --zero --iterations=3 ./archsin-pinstall-functions;
 
 # Remaining TO-DOs

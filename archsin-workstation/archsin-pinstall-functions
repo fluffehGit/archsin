@@ -99,3 +99,10 @@ function setApps {
     systemctl enable tlp.service;
 
 }
+
+function ativateNumlock {
+    paru -S mkinitcpio-numlock;
+
+    sudo sed --in-place "s/modconf/numlock modconf/" /etc/mkinitcpio.conf;
+    sudo mkinitcpio -p linux;
+}
