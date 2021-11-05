@@ -8,11 +8,14 @@ function systemCheck {
     dmesg | grep efifb: &> /dev/null;
 
     if [[ $? == 0 ]]; then
-        echo -e "EFI detected.\nInstallation script started!"
+        echo -e "EFI detected.";
+        ISMBR=false;
     else
-        echo -e "MBR/DOS installation not yet supported!!\nExitting script!!";
-        exit 1;
+        echo -e "MBR/DOS detected.";
+        ISMBR=true;
     fi
+
+    echo "Installation script started!";
 
 }
 
@@ -28,11 +31,27 @@ function getEnvironment {
         read -p "Full path to the disk the OS will be installed to (/dev/sdx | /dev/nvme0nx): " INSTALLDISK;
 
         if [[ $INSTALLDISK == *[nvme]* ]]; then
-            DISKLAYOUT=nvme-efiBTRFS.disk.layout;
-            DISKPARTITION1="${INSTALLDISK}p1";
-            DISKPARTITION2="${INSTALLDISK}p2";
+
+            if [[ $ISMBR ]]; then
+                DISKLAYOUT=nvme-mbrBTRFS.disk.layout;
+                MAINPARTITION="${INSTALLDISK}p1";
+            else
+                DISKLAYOUT=nvme-efiBTRFS.disk.layout;
+                EFIBOOTPARTITION="${INSTALLDISK}p1";
+                MAINPARTITION="${INSTALLDISK}p2";
+            fi
+
         else
-            DISKLAYOUT=efiBTRFS.disk.layout;
+
+            if [[ $ISMBR ]]; then
+                DISKLAYOUT=mbrBTRFS.disk.layout;
+                MAINPARTITION="${INSTALLDISK}1";
+            else
+                DISKLAYOUT=efiBTRFS.disk.layout;
+                EFIBOOTPARTITION="${INSTALLDISK}1";
+                MAINPARTITION="${INSTALLDISK}2";
+            fi
+
         fi
 
         #Pulling in Disk Layout file
@@ -57,13 +76,6 @@ function getEnvironment {
         read -p "${USRNAME} password: " USRPASSWD;
         read -p "${USRNAME} groups (comma separated): " USRGROUPS;
         USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
-
-<<blockComment
-        read -p "Git username: " GITUSR;
-        read -p "Git e-mail: " GITMAIL;
-        read -p "Git root username: " GITROOTUSR;
-        read -p "Git root e-mail: " GITROOTMAIL;
-blockComment
 
 }
 
@@ -91,13 +103,15 @@ function setDisk {
     fi
 
     # Formatting efi partition
-    mkfs.fat -F32 $DISKPARTITION1;
+    if [[ !$ISMBR ]]; then
+        mkfs.fat -F32 $EFIBOOTPARTITION;
+    fi
 
     # Formatting main partition as BTRFS
-    mkfs.btrfs --force $DISKPARTITION2;
+    mkfs.btrfs --force $MAINPARTITION;
 
     # Mounting main partition
-    mount $DISKPARTITION2 /mnt;
+    mount $MAINPARTITION /mnt;
 
     # Creating BTRFS Subvolumes
     btrfs subvolume create /mnt/@root;
@@ -113,22 +127,28 @@ function setDisk {
     umount /mnt;
 
     # Mounting BTRFS @root Subvolume
-    mount --options noatime,compress=zstd,space_cache,subvol=@root $DISKPARTITION2 /mnt;
+    mount --options noatime,compress=zstd,space_cache,subvol=@root $MAINPARTITION /mnt;
 
     # Creating mount directories for all subvolumes
-    mkdir /mnt/{boot,home,var,srv,opt,tmp,swap,.snapshots};
+    if [[ !$ISMBR ]]; then
+        mkdir /mnt/boot
+    fi
+
+    mkdir /mnt/{home,var,srv,opt,tmp,swap,.snapshots};
 
     # Mounting boot partition
-    mount $DISKPARTITION1 /mnt/boot;
+    if [[ !$ISMBR ]]; then
+        mount $EFIBOOTPARTITION /mnt/boot;
+    fi
 
     # Mounting Subvolumes
-    mount --options noatime,compress=zstd,space_cache,subvol=@home $DISPARTITION2 /mnt/home;
-    mount --options noatime,compress=zstd,space_cache,subvol=@srv $DISPARTITION2 /mnt/srv;
-    mount --options noatime,compress=zstd,space_cache,subvol=@tmp $DISPARTITION2 /mnt/tmp;
-    mount --options noatime,compress=zstd,space_cache,subvol=@opt $DISPARTITION2 /mnt/opt;
-    mount --options noatime,compress=zstd,space_cache,subvol=@snapshots $DISPARTITION2 /mnt/.snapshots;
-    mount --options subvol=@swap $DISPARTITION2 /mnt/swap;
-    mount --options subvol=@var $DISPARTITION2 /mnt/var;
+    mount --options noatime,compress=zstd,space_cache,subvol=@home $MAINPARTITION /mnt/home;
+    mount --options noatime,compress=zstd,space_cache,subvol=@srv $MAINPARTITION /mnt/srv;
+    mount --options noatime,compress=zstd,space_cache,subvol=@tmp $MAINPARTITION /mnt/tmp;
+    mount --options noatime,compress=zstd,space_cache,subvol=@opt $MAINPARTITION /mnt/opt;
+    mount --options noatime,compress=zstd,space_cache,subvol=@snapshots $MAINPARTITION /mnt/.snapshots;
+    mount --options subvol=@swap $MAINPARTITION /mnt/swap;
+    mount --options subvol=@var $MAINPARTITION /mnt/var;
 
     # Disabling CoW on swap and var
     chattr +C /mnt/swap;
@@ -199,7 +219,11 @@ function setInitramfs {
     mkinitcpio --preset linux;
 
     # installing grub
-    grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_GRUB;
+    if [[ $ISMBR ]]; then
+        grub-install --target=i386-pc $INSTALLDISK;
+    else
+        grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_GRUB;
+    fi
 
     # pulling grub default
     curl --header "${1}" \
