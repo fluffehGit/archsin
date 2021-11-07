@@ -57,7 +57,7 @@ setDisk;
 # Installing essentials
 pacstrap /mnt base base-devel linux linux-firmware linux-headers btrfs-progs grub grub-btrfs networkmanager network-manager-applet bc vim git openssh;
 
-if [[ !$ISMBR ]]; then
+if ! $ISMBR; then
     pacstrap /mnt efibootmgr
 fi
 
@@ -73,7 +73,7 @@ arch-chroot /mnt /bin/bash -- << EOCHROOT
     createSwap;
     setLocale "${CITY}";
     setHost "${HSTNAME}";
-    setInitramfs "${REPOAPITOKEN}" "${REPOID}";
+    setInitramfs "${REPOAPITOKEN}" "${REPOID}" "${INSTALLDISK}" "${ISMBR}" "${EHIBR}";
     setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${REPOAPITOKEN}" "${REPOID}";
 
     systemctl enable NetworkManager.service

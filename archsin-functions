@@ -168,7 +168,7 @@ function createSwap {
     GIBIRAM=$(echo "${KIBIRAM} / 1000000" | bc);
 
     if [[ $GIBIRAM < 5 ]]; then
-        KIBIRAM=KIBIRAM * 2;
+        KIBIRAM=$(echo "${KIBIRAM} * 2" | bc);
     else
         KIBIRAM=8018400;
     fi
@@ -231,13 +231,13 @@ function setInitramfs {
     mkinitcpio --preset linux;
 
     # installing grub
-    if $ISMBR; then
-        grub-install --target=i386-pc $INSTALLDISK;
+    if $4; then
+        grub-install --target=i386-pc $3;
     else
         grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_GRUB;
     fi
 
-    if [[ $EHIBR == [Yy]* ]]; then
+    if [[ $5 == [Yy]* ]]; then
 
         # pulling grub default
         curl --header "${1}" \
