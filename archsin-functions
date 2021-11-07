@@ -30,7 +30,7 @@ function getEnvironment {
         lsblk --paths;
         read -p "Full path to the disk the OS will be installed to (/dev/sdx | /dev/nvme0nx): " INSTALLDISK;
 
-        if [[ $INSTALLDISK == *[nvme]* ]]; then
+        if [[ $INSTALLDISK == *nvme* ]]; then
 
             if [[ $ISMBR ]]; then
                 DISKLAYOUT=nvme-mbrBTRFS.disk.layout;
