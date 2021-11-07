@@ -24,7 +24,7 @@ function getEnvironment {
 
         read -p "Country name for pacman mirrors: " COUNTRY;
         read -p "Timezone city: " CITY;
-        read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning ?[A/m]: ' PARTTYPE;
+        read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning? [A/m]: ' PARTTYPE;
         : ${PARTTYPE:=A};
 
         lsblk --paths;
@@ -32,7 +32,7 @@ function getEnvironment {
 
         if [[ $INSTALLDISK == *nvme* ]]; then
 
-            if [[ $ISMBR ]]; then
+            if $ISMBR; then
                 DISKLAYOUT=nvme-mbrBTRFS.disk.layout;
                 MAINPARTITION="${INSTALLDISK}p1";
             else
@@ -43,7 +43,7 @@ function getEnvironment {
 
         else
 
-            if [[ $ISMBR ]]; then
+            if $ISMBR; then
                 DISKLAYOUT=mbrBTRFS.disk.layout;
                 MAINPARTITION="${INSTALLDISK}1";
             else
@@ -71,7 +71,7 @@ function getEnvironment {
             read -p "Input system configuration files repository name: " REPOID;
         fi
 
-        read -p "Enable system hibernation?: [Y/N]" EHIBR;
+        read -p "Enable system hibernation? [Y/N]: " EHIBR;
         : ${EHIBR:=Y};
         read -p "Machine name (hostname): " HSTNAME;
         read -p "Machine username: " USRNAME;
@@ -105,7 +105,7 @@ function setDisk {
     fi
 
     # Formatting efi partition
-    if [[ !$ISMBR ]]; then
+    if ! $ISMBR; then
         mkfs.fat -F32 $EFIBOOTPARTITION;
     fi
 
@@ -132,14 +132,14 @@ function setDisk {
     mount --options noatime,compress=zstd,space_cache,subvol=@root $MAINPARTITION /mnt;
 
     # Creating mount directories for all subvolumes
-    if [[ !$ISMBR ]]; then
+    if ! $ISMBR; then
         mkdir /mnt/boot
     fi
 
     mkdir /mnt/{home,var,srv,opt,tmp,swap,.snapshots};
 
     # Mounting boot partition
-    if [[ !$ISMBR ]]; then
+    if ! $ISMBR; then
         mount $EFIBOOTPARTITION /mnt/boot;
     fi
 
@@ -231,7 +231,7 @@ function setInitramfs {
     mkinitcpio --preset linux;
 
     # installing grub
-    if [[ $ISMBR ]]; then
+    if $ISMBR; then
         grub-install --target=i386-pc $INSTALLDISK;
     else
         grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_GRUB;
