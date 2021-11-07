@@ -163,10 +163,20 @@ function createSwap {
     echo -e "\n${WHITE}Creating swap file...${NC}\n";
 
     # Making Swap File as big as RAM in size
+
+    KIBIRAM=$(cat /proc/meminfo | awk 'NR==1{print $2}');
+    GIBIRAM=$(echo "${KIBIRAM} / 1000000" | bc);
+
+    if [[ $GIBIRAM < 5 ]]; then
+        KIBIRAM=KIBIRAM * 2;
+    else
+        KIBIRAM=8018400;
+    fi
+
     dd if=/dev/zero \
         of=/swap/swapfile \
         bs=1K \
-        count=$(cat /proc/meminfo | awk 'NR==1{print $2}') \
+        count=$KIBIRAM \
         status=progress;
 
     # Disabling compression
