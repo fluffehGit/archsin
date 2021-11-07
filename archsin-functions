@@ -71,6 +71,8 @@ function getEnvironment {
             read -p "Input system configuration files repository name: " REPOID;
         fi
 
+        read -p "Enable system hibernation?: [Y/N]" EHIBR;
+        : ${EHIBR:=Y};
         read -p "Machine name (hostname): " HSTNAME;
         read -p "Machine username: " USRNAME;
         read -p "${USRNAME} password: " USRPASSWD;
@@ -93,7 +95,7 @@ function setDisk {
     echo -e "\n${WHITE}Setting up disk partitions...${NC}\n";
 
     # Partitioning disk
-    if [[ $PARTTYPE == [Aa]* ]] ; then
+    if [[ $PARTTYPE == [Aa]* ]]; then
         sed --in-place "s#/dev/sdx#${INSTALLDISK}#" $DISKLAYOUT;
         sfdisk $INSTALLDISK < $DISKLAYOUT;
     else
@@ -225,31 +227,35 @@ function setInitramfs {
         grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=arch_GRUB;
     fi
 
-    # pulling grub default
-    curl --header "${1}" \
-        --header "Accept: application/vnd.github.v3.raw" \
-        "https://api.github.com/repos/fluffehGit/${2}/contents/etc/default/grub?ref=master" \
-        --output /etc/default/grub;
+    if [[ $EHIBR == [Yy]* ]]; then
 
-    # getting UUID of BTRFS partition where Swap file is located
-    SWAPUUID=$(findmnt --noheadings --output UUID --target /swap/swapfile);
+        # pulling grub default
+        curl --header "${1}" \
+            --header "Accept: application/vnd.github.v3.raw" \
+            "https://api.github.com/repos/fluffehGit/${2}/contents/etc/default/grub?ref=master" \
+            --output /etc/default/grub;
 
-    # pulling in program that calculates file physical offset for BTRFS
-    curl --remote-name "https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c";
+        # getting UUID of BTRFS partition where Swap file is located
+        SWAPUUID=$(findmnt --noheadings --output UUID --target /swap/swapfile);
 
-    # compiling
-    gcc -O2 -o btrfs_map_physical btrfs_map_physical.c;
+        # pulling in program that calculates file physical offset for BTRFS
+        curl --remote-name "https://raw.githubusercontent.com/osandov/osandov-linux/master/scripts/btrfs_map_physical.c";
 
-    # getting offset
-    SWAPOFFSET=$(echo "\
-        $(./btrfs_map_physical /swap/swapfile | awk 'NR==2 {print $9}') \
-        / $(getconf PAGESIZE)" \
-        | bc);
+        # compiling
+        gcc -O2 -o btrfs_map_physical btrfs_map_physical.c;
 
-    # removing old settings
-    sed --in-place '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
-    # adding new ones
-    sed --in-place "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"\n#replace_in_script/" /etc/default/grub;
+        # getting offset
+        SWAPOFFSET=$(echo "\
+            $(./btrfs_map_physical /swap/swapfile | awk 'NR==2 {print $9}') \
+            / $(getconf PAGESIZE)" \
+            | bc);
+
+        # removing old settings
+        sed --in-place '/GRUB_CMDLINE_LINUX_DEFAULT/d' /etc/default/grub;
+        # adding new ones
+        sed --in-place "s/#replace_in_script/GRUB_CMDLINE_LINUX_DEFAULT=\"loglevel=3 resume=UUID=${SWAPUUID} resume_offset=${SWAPOFFSET}\"\n#replace_in_script/" /etc/default/grub;
+
+    fi
 
     grub-mkconfig --output /boot/grub/grub.cfg;
 
