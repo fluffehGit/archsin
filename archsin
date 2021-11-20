@@ -82,16 +82,3 @@ EOCHROOT
 
 
 shred --verbose -u --zero --iterations=3 /mnt/root/archsin-functions;
-
-<<blockComment
-sed --in-place \
-    "s/#PLACEHOLDER/\
-    REPOAPITOKEN=\"${REPOAPITOKEN}\"\n\
-    REPOID=\"${REPOID}\"\n\
-    GITUSR=\"${GITUSR}\"\n\
-    GITMAIL=\"${GITMAIL}\"\n\
-    GITROOTUSR=\"${GITROOTUSR}\"\n\
-    GITROOTMAIL=\"${GITROOTMAIL}\"\n\
-    HSTNAME=\"${HSTNAME}\"\n/" \
-    /mnt/home/$USRNAME/archsin-pinstall;
-blockComment
