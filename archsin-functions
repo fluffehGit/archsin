@@ -164,19 +164,10 @@ function createSwap {
 
     # Making Swap File as big as RAM in size
 
-    KIBIRAM=$(cat /proc/meminfo | awk 'NR==1{print $2}');
-    GIBIRAM=$(echo "${KIBIRAM} / 1000000" | bc);
-
-    if [[ $GIBIRAM < 5 ]]; then
-        KIBIRAM=$(echo "${KIBIRAM} * 2" | bc);
-    else
-        KIBIRAM=8018400;
-    fi
-
     dd if=/dev/zero \
         of=/swap/swapfile \
         bs=1K \
-        count=$KIBIRAM \
+        count=8018400 \
         status=progress;
 
     # Disabling compression
