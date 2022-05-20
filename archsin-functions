@@ -128,7 +128,7 @@ function setDisk {
         mkdir /mnt/boot
     fi
 
-    mkdir /mnt/{home,var,srv,opt,tmp,swap,.snapshots};
+    mkdir /mnt/{home,var,tmp,swap,.snapshots};
 
     # Mounting boot partition
     if ! $ISMBR; then
@@ -137,9 +137,7 @@ function setDisk {
 
     # Mounting Subvolumes
     mount --options noatime,compress=zstd,space_cache,subvol=@home $MAINPARTITION /mnt/home;
-    mount --options noatime,compress=zstd,space_cache,subvol=@srv $MAINPARTITION /mnt/srv;
     mount --options noatime,compress=zstd,space_cache,subvol=@tmp $MAINPARTITION /mnt/tmp;
-    mount --options noatime,compress=zstd,space_cache,subvol=@opt $MAINPARTITION /mnt/opt;
     mount --options noatime,compress=zstd,space_cache,subvol=@snapshots $MAINPARTITION /mnt/.snapshots;
     mount --options subvol=@swap $MAINPARTITION /mnt/swap;
     mount --options subvol=@var $MAINPARTITION /mnt/var;
@@ -153,7 +151,7 @@ function createSwap {
 
     echo -e "\n${WHITE}Creating swap file...${NC}\n";
 
-    # Making Swap File as big as RAM in size
+    # Making Swap File
 
     dd if=/dev/zero \
         of=/swap/swapfile \
@@ -168,7 +166,6 @@ function createSwap {
     mkswap /swap/swapfile;
     swapon /swap/swapfile;
     echo -e "/swap/swapfile\tnone\tswap\tdefaults\t0 0" >> /etc/fstab;
-
 }
 
 function setLocale {
@@ -185,7 +182,6 @@ function setLocale {
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
     locale-gen;
     echo "LANG=en_US.UTF-8" >> /etc/locale.conf;
-
 }
 
 function setHost {
@@ -197,7 +193,6 @@ function setHost {
     echo -e "127.0.0.1\tlocalhost" >> /etc/hosts;
     echo -e "::1\tlocalhost" >> /etc/hosts;
     echo -e "127.0.1.1\t${1}.localdomain\t${1}" >> /etc/hosts;
-
 }
 
 function setInitramfs {
