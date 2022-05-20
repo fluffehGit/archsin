@@ -16,7 +16,6 @@ function systemCheck {
     fi
 
     echo "Installation script started!";
-
 }
 
 # Setting up install environment;
@@ -40,9 +39,7 @@ function getEnvironment {
                 EFIBOOTPARTITION="${INSTALLDISK}p1";
                 MAINPARTITION="${INSTALLDISK}p2";
             fi
-
         else
-
             if $ISMBR; then
                 DISKLAYOUT=mbrBTRFS.disk.layout;
                 MAINPARTITION="${INSTALLDISK}1";
@@ -51,7 +48,6 @@ function getEnvironment {
                 EFIBOOTPARTITION="${INSTALLDISK}1";
                 MAINPARTITION="${INSTALLDISK}2";
             fi
-
         fi
 
         #Pulling in Disk Layout file
@@ -78,7 +74,6 @@ function getEnvironment {
         read -p "${USRNAME} password: " USRPASSWD;
         read -p "${USRNAME} groups (comma separated): " USRGROUPS;
         USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
-
 }
 
 function setMirrors {
@@ -87,7 +82,6 @@ function setMirrors {
 
     pacman -Syy --noconfirm --needed reflector;
     reflector --save /etc/pacman.d/mirrorlist --sort rate --age 12 --fastest 30 --country $COUNTRY --protocol https;
-
 }
 
 function setDisk {
@@ -119,8 +113,6 @@ function setDisk {
     btrfs subvolume create /mnt/@root;
     btrfs subvolume create /mnt/@home;
     btrfs subvolume create /mnt/@var;
-    btrfs subvolume create /mnt/@srv;
-    btrfs subvolume create /mnt/@opt;
     btrfs subvolume create /mnt/@tmp;
     btrfs subvolume create /mnt/@swap;
     btrfs subvolume create /mnt/@snapshots;
@@ -155,7 +147,6 @@ function setDisk {
     # Disabling CoW on swap and var
     chattr +C /mnt/swap;
     chattr +C /mnt/var;
-
 }
 
 function createSwap {
@@ -261,16 +252,4 @@ function setInitramfs {
     grub-mkconfig --output /boot/grub/grub.cfg;
 
     shred --verbose -u --zero --iterations=3 btrfs_map_physical btrfs_map_physical.c;
-}
-
-function setUser {
-
-    echo -e "\n${WHITE}Creating system user...${NC}\n";
-
-    # Creating user
-    useradd --create-home --groups $1 $2;
-    chpasswd <<< $2:$3;
-    sed --in-place 's/^#\s*\(%wheel\s*ALL=(ALL)\s*ALL\)/\1/' /etc/sudoers;
-    visudo --check --file=/etc/sudoers;
-
 }

@@ -24,15 +24,6 @@
 #
 ####################################################################################################
 
-#exiting if any error encountered
-set -e;
-
-#keep track of the last executed command
-trap 'lastCommand=$currentCommand; currentCommand=$BASH_COMMAND' DEBUG;
-#print error message before exitting
-trap 'echo "\"${lastCommand}\" command failed with exit code $?."' EXIT;
-
-
 # Pulling functions file
 curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/archsin-functions";
 source archsin-functions;
@@ -74,11 +65,7 @@ arch-chroot /mnt /bin/bash -- << EOCHROOT
     setLocale "${CITY}";
     setHost "${HSTNAME}";
     setInitramfs "${REPOAPITOKEN}" "${REPOID}" "${INSTALLDISK}" "${ISMBR}" "${EHIBR}";
-    setUser "${USRGROUPS}" "${USRNAME}" "${USRPASSWD}" "${REPOAPITOKEN}" "${REPOID}";
 
     systemctl enable NetworkManager.service
 
 EOCHROOT
-
-
-shred --verbose -u --zero --iterations=3 /mnt/root/archsin-functions;
