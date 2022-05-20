@@ -21,10 +21,13 @@ function systemCheck {
 # Setting up install environment;
 function getEnvironment {
 
-        read -p "Country name for pacman mirrors: " COUNTRY;
-        read -p "Timezone city: " CITY;
-        read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning? [A/m]: ' PARTTYPE;
-        : ${PARTTYPE:=A};
+        if [[ COUNTRY == "" ]]; then    read -p "Country name for pacman mirrors: " COUNTRY;    fi
+
+        if [[ CITY == "" ]]; then   read -p "Timezone city: " CITY; fi
+        if [[ PARTTYPE == "" ]]; then
+            read -p $'[\e[1;37mA\e[0m]uto or [\e[1;37mM\e[0m]anual partitioning? [A/m]: ' PARTTYPE;
+            : ${PARTTYPE:=A};
+        fi
 
         lsblk --paths;
         read -p "Full path to the disk the OS will be installed to (/dev/sdx | /dev/nvme0nx): " INSTALLDISK;
@@ -53,27 +56,15 @@ function getEnvironment {
         #Pulling in Disk Layout file
         curl --remote-name "https://raw.githubusercontent.com/fluffehGit/archsin/master/DiskLayouts/${DISKLAYOUT}";
 
-        if [[ -f privateRepoAPI.token ]]; then
-            read REPOAPITOKEN < privateRepoAPI.token;
-        else
-            read -p "Input system configuration files repository API token: " REPOAPITOKEN;
-        fi
+        if [[ REPOAPITOKE == "" ]]; then    read -p "Input system configuration files repository API token: " REPOAPITOKEN; fi
 
         REPOAPITOKEN="Authorization: token ${REPOAPITOKEN}";
 
-        if [[ -f privateRepo.name ]]; then
-            read REPOID < privateRepo.name;
-        else
-            read -p "Input system configuration files repository name: " REPOID;
-        fi
+        if [[ REPOID == "" ]]; then read -p "Input system configuration files repository name: " REPOID;    fi
 
         read -p "Enable system hibernation? [Y/N]: " EHIBR;
         : ${EHIBR:=Y};
         read -p "Machine name (hostname): " HSTNAME;
-        read -p "Machine username: " USRNAME;
-        read -p "${USRNAME} password: " USRPASSWD;
-        read -p "${USRNAME} groups (comma separated): " USRGROUPS;
-        USRGROUPS=$(echo $USRGROUPS | tr --delete ' ');
 }
 
 function setMirrors {
