@@ -1,4 +1,0 @@
-label: dos
-device: /dev/sdx
-
-/dev/sdx1 : type=83
