@@ -14,8 +14,6 @@
 #   ███████║██║██║ ╚═╝ ██║██║     ███████╗███████╗    ██║██║ ╚████║███████║   ██║   ██║  ██║███████╗███████╗███████╗██║  ██║
 #   ╚══════╝╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝  ╚═╝
 #
-# Source: https://git.io/fluffeh-archsin
-#
 #############################################################################################################################
 
 NC="\e[0m";
@@ -135,7 +133,7 @@ then
 fi
 
 echo -e "\n[INFO] -- Installing base system..."
-pacstrap /mnt base base-devel btrfs-progs linux linux-firmware $ucodePackage lvm2 rsync git vim git networkmanager man-pages man-db firewalld
+pacstrap /mnt base base-devel btrfs-progs linux linux-firmware $ucodePackage git vim git networkmanager man-pages man-db firewalld
 
 genfstab -U /mnt >> /mnt/etc/fstab
 sed -i 's/fmask=0022,dmask=0022/fmask=0077,dmask=0077/' /mnt/etc/fstab
@@ -194,11 +192,11 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf neofetch net-tools nfs-utils ntfs-3g nushell otf-firamono-nerd p7zip procs podman podman-compose pkgfile rsync ripgrep sd starship tokei tlp unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox freetube fwupd fzf neofetch net-tools nfs-utils ntfs-3g nushell otf-firamono-nerd p7zip procs podman podman-compose pkgfile rsync ripgrep sd starship tokei tlp unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing paru..."
-    sudo -u $username /bin/bash -- <<EOF
-set -ex
+    echo "$username ALL=(ALL) NOPASSWD: /usr/bin/pacman" >> /etc/sudoers
+    sudo -u $username /bin/bash -e -- <<EOF
 mkdir -p ~/bin
 git clone https://aur.archlinux.org/paru.git ~/bin/paru
 pushd ~/bin/paru
@@ -224,6 +222,7 @@ EOF
         pacman -S --noconfirm gnome
         systemctl enable gdm
     fi
+    sed -i '/^'$username'/d' /etc/sudoers
 
     echo -e "\n[INFO] -- Taking initial snapshot..."
     name="root-$(date +%Y%m%d%H%M%S)"
