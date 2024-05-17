@@ -192,43 +192,82 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox freetube fwupd fzf neofetch net-tools nfs-utils ntfs-3g nushell otf-firamono-nerd p7zip procs podman podman-compose pkgfile rsync ripgrep sd starship tokei tlp unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf neofetch net-tools nfs-utils ntfs-3g nushell otf-firamono-nerd p7zip procs podman podman-compose pkgfile rsync ripgrep sd starship tokei tlp unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing paru..."
     echo "$username ALL=(ALL) NOPASSWD: /usr/bin/pacman" >> /etc/sudoers
-    sudo -u $username /bin/bash -e -- <<EOF
-mkdir -p ~/bin
-git clone https://aur.archlinux.org/paru.git ~/bin/paru
-pushd ~/bin/paru
-makepkg -si --noconfirm
+    sudo -u $username /bin/bash -e -- <<-EOF
+		mkdir -p ~/bin
+		git clone https://aur.archlinux.org/paru.git ~/bin/paru
+		pushd ~/bin/paru
+		makepkg -si --noconfirm
 EOF
 
     echo -e "\n[INFO] -- Installing AUR packages..."
     sudo -u $username paru -S --noconfirm brave-bin freetube-bin visual-studio-code-bin waterfox-bin
 
-    echo -e "\n[INFO] -- Checking for battery..."
-    if [[ -d /sys/class/power_supply/BAT0 ]]; then
-        echo -e "\n[INFO] -- Battery found, installing tlp..."
-        sudo -u $username paru -S --noconfirm tlp tlpui
-        systemctl enable tlp
-    fi
+    extensions=(
+        "catppuccin.catppuccin-vsc"
+        "eamodio.gitlens"
+        "github.copilot"
+        "github.copilot-chat"
+        "medo64.render-crlf"
+        "mhutchie.git-graph"
+        "ms-vscode-remote.remote-containers"
+        "pkief.material-icon-theme"
+        "shakram02.bash-beautify"
+        "vscodevim.vim"
+    )
 
-    if [[ $desktopEnvironment == "kde" ]]; then
-        echo -e "\n[INFO] -- Installing KDE..."
-        pacman -S --noconfirm plasma libdbusmenu-glib libblockdev-btrfs udisks2-btrfs kdeconnect
-        systemctl enable sddm
+    for extension in "\${extensions[@]}";
+    do
+        sudo -u $username code --install-extension \$extension
+    done
+
+echo -e "\n[INFO] -- Checking for battery..."
+if [[ -d /sys/class/power_supply/BAT0 ]]; then
+    echo -e "\n[INFO] -- Battery found, installing tlp..."
+    sudo -u $username paru -S --noconfirm tlp tlpui
+    systemctl enable tlp
+fi
+
+if [[ $desktopEnvironment == "kde" ]]; then
+    echo -e "\n[INFO] -- Installing KDE..."
+    pacman -S --noconfirm plasma libdbusmenu-glib libblockdev-btrfs udisks2-btrfs kdeconnect
+    systemctl enable sddm
+    mkdir -p /etc/sddm.conf.d
+        cat <<-EOF > /etc/sddm.conf.d/kde_settings.conf
+			[Autologin]
+			Relogin=false
+			Session=
+			User=
+
+			[General]
+			HaltCommand=/usr/bin/systemctl poweroff
+			RebootCommand=/usr/bin/systemctl reboot
+
+			[Theme]
+			Current=breeze
+			CursorSize=
+			CursorTheme=breeze_cursors
+			Font=Cantarell,12,-1,5,50,0,0,0,0,0
+
+			[Users]
+			MaximumUid=60513
+			MinimumUid=1000
+EOF
     elif [[ $desktopEnvironment == "gnome" ]]; then
-        echo -e "\n[INFO] -- Installing GNOME..."
-        pacman -S --noconfirm gnome
-        systemctl enable gdm
-    fi
-    sed -i '/^'$username'/d' /etc/sudoers
+    echo -e "\n[INFO] -- Installing GNOME..."
+    pacman -S --noconfirm gnome
+    systemctl enable gdm
+fi
+sed -i '/^'$username'/d' /etc/sudoers
 
-    echo -e "\n[INFO] -- Taking initial snapshot..."
-    name="root-$(date +%Y%m%d%H%M%S)"
-    btrfs su snapshot -r / /.snapshots/\$name
-    echo -e "\n[INFO] -- Setting up systemd-boot snapshot entry..."
-    echo -e "title Arch Linux (\$name)\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $installDisk"2"):root root=/dev/mapper/root rootflags=subvol=@snapshots/\$name ro" > /boot/loader/entries/\$name.conf
+echo -e "\n[INFO] -- Taking initial snapshot..."
+name="root-$(date +%Y%m%d%H%M%S)"
+btrfs su snapshot -r / /.snapshots/\$name
+echo -e "\n[INFO] -- Setting up systemd-boot snapshot entry..."
+echo -e "title Arch Linux (\$name)\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $installDisk"2"):root root=/dev/mapper/root rootflags=subvol=@snapshots/\$name ro" > /boot/loader/entries/\$name.conf
 EOT
 
 echo -e "\n[INFO] -- Installing pacman hook for systemd-boot upgrade..."
@@ -301,58 +340,4 @@ cat <<-'EOT' > /mnt/etc/pacman.d/hooks/99-btrfs-snap.hook
 	Description = Taking root filesystem snapshot...
 	When = PreTransaction
 	Exec = /usr/local/bin/btsnap -p /
-EOT
-
-echo -e "\n[INFO] -- Update bashrc for $username..."
-cat <<-'EOT' > /mnt/home/$username/.bashrc
-	#
-	# ~/.bashrc
-	#
-
-	# If not running interactively, don't do anything
-	[[ $- != *i* ]] && return
-
-	set -o noclobber
-	set -o vi
-
-	shopt -s autocd
-	shopt -s cdspell
-	shopt -s checkwinsize
-	shopt -s cmdhist
-	shopt -s direxpand
-	shopt -s dotglob
-	shopt -s expand_aliases
-	shopt -s histappend
-	shopt -s histverify
-	shopt -s lithist
-
-	alias ls='ls --color=auto'
-	alias ll='ls -l --color=auto'
-	alias la='ls -la --color=auto'
-	alias cp='cp -i'
-	alias mv='mv -i'
-	alias rm='rm -i'
-	alias nv='nvim $@'
-	alias grep='grep --color=auto'
-	alias rmswap='rm -i $(find $HOME -name "*.swp")'
-	alias suspend='systemctl suspend'
-	alias open='xdg-open'
-	alias glog='git log --all --oneline --decorate --graph'
-	alias rr='curl -s -L https://raw.githubusercontent.com/keroserene/rickrollrc/master/roll.sh | bash'
-
-	bind "set completion-ignore-case on"
-	bind "set show-all-if-ambiguous on"
-	bind "set colored-stats on"
-	bind "set visible-stats on"
-	bind "set mark-symlinked-directories on"
-	bind "set colored-completion-prefix on"
-	bind "set menu-complete-display-prefix on"
-
-	export HISTCONTROL="erasedups:ignorespace"
-
-	source /usr/share/doc/pkgfile/command-not-found.bash
-
-	PS1='[\u@\h \W]\$ '
-
-	eval "$(starship init bash)"
 EOT
