@@ -133,7 +133,7 @@ then
 fi
 
 echo -e "\n[INFO] -- Installing base system..."
-pacstrap /mnt base base-devel btrfs-progs linux linux-firmware $ucodePackage git vim git networkmanager man-pages man-db firewalld
+pacstrap /mnt base base-devel btrfs-progs linux linux-firmware $ucodePackage git vim networkmanager man-pages man-db firewalld rsync
 
 genfstab -U /mnt >> /mnt/etc/fstab
 sed -i 's/fmask=0022,dmask=0022/fmask=0077,dmask=0077/' /mnt/etc/fstab
@@ -192,7 +192,14 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf neofetch net-tools nfs-utils ntfs-3g nushell otf-firamono-nerd p7zip procs podman podman-compose pkgfile rsync ripgrep sd starship tokei tlp unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf lazygit neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship tlp tokei thunderbird unrar unzip wget wl-clipboard zoxide $graphicsDriver
+
+    echo -e "\n[INFO] -- Installing LazyVim..."
+    sudo -u $username /bin/bash -e -- <<-EOF
+		rm -rf ~/.config/nvim ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim 2> /dev/null
+		git clone https://github.com/LazyVim/starter ~/.config/nvim
+		rm -rf ~/.config/nvim/.git
+EOF
 
     echo -e "\n[INFO] -- Installing paru..."
     echo "$username ALL=(ALL) NOPASSWD: /usr/bin/pacman" >> /etc/sudoers
@@ -234,6 +241,14 @@ fi
 if [[ $desktopEnvironment == "kde" ]]; then
     echo -e "\n[INFO] -- Installing KDE..."
     pacman -S --noconfirm plasma libdbusmenu-glib libblockdev-btrfs udisks2-btrfs kdeconnect
+    sudo -u $username /bin/bash -e -- <<-EOF
+		paru -S --noconfirm plasma6-applets-window-title
+		git clone https://github.com/boraerciyas/kde_controlcentre ~/.local/share/plasma/plasmoids/kde_controlcentre
+		pushd ~/.local/share/plasma/plasmoids/kde_controlcentre
+		kpackagetool6 -i package
+        ln -s ~/.local/share/kpackage/generic/com.github.boraerciyas.kde_controlcentre ~/.local/share/plasma/plasmoids/
+		popd
+EOF
     systemctl enable sddm
     mkdir -p /etc/sddm.conf.d
         cat <<-EOF > /etc/sddm.conf.d/kde_settings.conf
