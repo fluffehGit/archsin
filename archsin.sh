@@ -16,7 +16,7 @@
 #
 #############################################################################################################################
 
-NC="\e[0m";
+NC='\e[0m'
 WHITE='\e[97m'
 YELLOW='\e[33m'
 RED='\e[31m'
@@ -24,65 +24,65 @@ RED='\e[31m'
 exec &>> >(tee -a /root/arch-install.log)
 
 usage() {
-    echo -e "Usage: $(basename $0) -d <disk> -e <encryption-password> -m <country code> -t <timezone> -h <hostname> -u <username> -p <password> -g <graphics-driver> -w <kde/gnome>";
-    echo -e "Options:";
-    echo -e "\t-d\tDisk to install Arch Linux on";
-    echo -e "\t-e\tEncryption password for the disk";
-    echo -e "\t-m\tCountry code for mirrorlist (e.g. US)";
-    echo -e "\t-t\tTimezone city (e.g. New_York)";
-    echo -e "\t-h\tHostname for the system";
-    echo -e "\t-u\tUsername for the system";
-    echo -e "\t-p\tPassword for the user";
-    echo -e "\t-g\tGraphics driver to install (e.g. nvidia)";
-    echo -e "\t-w\tDesktop environment to install (e.g. kde, gnome)";
-    echo -e "Example: $(basename $0) -d /dev/sda -e SecurePass123 -m US -t New_York -h archbox -u archuser -p SecureUserPass123 -g nvidia -w kde";
-    exit 1;
+	echo -e "Usage: $(basename $0) -d <disk> -e <encryption-password> -m <country code> -t <timezone> -h <hostname> -u <username> -p <password> -g <graphics-driver> -w <kde/gnome>"
+	echo -e "Options:"
+	echo -e "\t-d\tDisk to install Arch Linux on"
+	echo -e "\t-e\tEncryption password for the disk"
+	echo -e "\t-m\tCountry code for mirrorlist (e.g. US)"
+	echo -e "\t-t\tTimezone city (e.g. New_York)"
+	echo -e "\t-h\tHostname for the system"
+	echo -e "\t-u\tUsername for the system"
+	echo -e "\t-p\tPassword for the user"
+	echo -e "\t-g\tGraphics driver to install (e.g. nvidia)"
+	echo -e "\t-w\tDesktop environment to install (e.g. kde, gnome)"
+	echo -e "Example: $(basename $0) -d /dev/sda -e SecurePass123 -m US -t New_York -h archbox -u archuser -p SecureUserPass123 -g nvidia -w kde"
+	exit 1
 }
 
 while getopts "d:e:m:t:h:u:p:g:w:" opt; do
-    case $opt in
-        d) installDisk=$OPTARG;;
-        e) encryptionPassword=$OPTARG;;
-        m) mirrorlistCountry=$OPTARG;;
-        t) timezoneCity=$OPTARG;;
-        h) hostname=$OPTARG;;
-        u) username=$OPTARG;;
-        p) userPassword=$OPTARG;;
-        g) graphicsDriver=$OPTARG;;
-        w) desktopEnvironment=$OPTARG;;
-        \?) usage;;
-        :) usage;;
-    esac
+	case $opt in
+	d) installDisk=$OPTARG ;;
+	e) encryptionPassword=$OPTARG ;;
+	m) mirrorlistCountry=$OPTARG ;;
+	t) timezoneCity=$OPTARG ;;
+	h) hostname=$OPTARG ;;
+	u) username=$OPTARG ;;
+	p) userPassword=$OPTARG ;;
+	g) graphicsDriver=$OPTARG ;;
+	w) desktopEnvironment=$OPTARG ;;
+	\?) usage ;;
+	:) usage ;;
+	esac
 done
 
 if [[ -z $installDisk || -z $encryptionPassword || -z $mirrorlistCountry || -z $timezoneCity || -z $hostname || -z $username || -z $userPassword || -z $desktopEnvironment ]]; then
-    echo -e "${RED}[ERROR] -- Missing required arguments${NC}";
-    usage;
+	echo -e "${RED}[ERROR] -- Missing required arguments${NC}"
+	usage
 fi
 
 if [[ $EUID -ne 0 ]]; then
-    echo "${RED}[ERROR] -- This script must be run as root${NC}";
-    exit 1;
+	echo "${RED}[ERROR] -- This script must be run as root${NC}"
+	exit 1
 fi
 
 if [[ ! -f /sys/firmware/efi/fw_platform_size ]]; then
-    echo "${RED}[ERROR] -- Legacy system detected, exiting...${NC}"
-    exit 1
+	echo "${RED}[ERROR] -- Legacy system detected, exiting...${NC}"
+	exit 1
 fi
 
 if ! $(timedatectl list-timezones | grep -qi $timezoneCity); then
-    echo "${RED}[ERROR] -- Timezone city $timezoneCity not found${NC}";
-    exit 1;
+	echo "${RED}[ERROR] -- Timezone city $timezoneCity not found${NC}"
+	exit 1
 fi
 
 echo -e "\n[INFO] -- Enabling NTP..."
 timedatectl set-ntp true
 
-echo -e "${YELLOW}[WARNING] -- This script will erase all data on $installDisk. Do you want to continue? (y/n)${NC}";
+echo -e "${YELLOW}[WARNING] -- This script will erase all data on $installDisk. Do you want to continue? (y/n)${NC}"
 read answer
 if [[ $answer == "n" ]]; then
-    echo "Exiting..."
-    exit 0
+	echo "Exiting..."
+	exit 0
 fi
 
 echo -e "\n[INFO] -- Partitioning $installDisk..."
@@ -122,50 +122,48 @@ swapon /mnt/swap/swapfile
 
 echo -e "\n[INFO] -- Check CPU vendor..."
 cpuVendor=$(lscpu | grep -i vendor | awk 'NR==1 {print $3}')
-if [[ $cpuVendor == "AuthenticAMD" ]];
-then
-    echo -e "\n[INFO] -- AMD CPU detected, installing amd-ucode..."
-    ucodePackage="amd-ucode"
-elif [[ $cpuVendor == "GenuineIntel" ]];
-then
-    echo -e "\n[INFO] -- Intel CPU detected, installing intel-ucode..."
-    ucodePackage="intel-ucode"
+if [[ $cpuVendor == "AuthenticAMD" ]]; then
+	echo -e "\n[INFO] -- AMD CPU detected, installing amd-ucode..."
+	ucodePackage="amd-ucode"
+elif [[ $cpuVendor == "GenuineIntel" ]]; then
+	echo -e "\n[INFO] -- Intel CPU detected, installing intel-ucode..."
+	ucodePackage="intel-ucode"
 fi
 
 echo -e "\n[INFO] -- Installing base system..."
 pacstrap /mnt base base-devel btrfs-progs linux linux-firmware $ucodePackage git vim networkmanager man-pages man-db firewalld rsync
 
-genfstab -U /mnt >> /mnt/etc/fstab
+genfstab -U /mnt >>/mnt/etc/fstab
 sed -i 's/fmask=0022,dmask=0022/fmask=0077,dmask=0077/' /mnt/etc/fstab
-echo -e "/swap/swapfile none swap defaults 0 0" >> /mnt/etc/fstab
+echo -e "/swap/swapfile none swap defaults 0 0" >>/mnt/etc/fstab
 
 arch-chroot /mnt /bin/bash -- <<EOT
     exec &>> >(tee -a /var/log/arch-install-chroot.log)
 
     set -e
 
-    echo -e "\n[INFO] -- Setting up timezone..."
+    echo -e "\n[INFO] -- Configuring timezone..."
     ln -sf /usr/share/zoneinfo/$timezoneCity /etc/localtime
     hwclock --systohc
 
-    echo -e "\n[INFO] -- Setting up locale..."
+    echo -e "\n[INFO] -- Configuring locale..."
     sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
     locale-gen
-    echo "LANG=en_US.UTF-8" > /etc/locale.conf
+    echo -e "LANG=en_US.UTF-8"> /etc/locale.conf
 
-    echo -e "\n[INFO] -- Setting up hostname..."
+    echo -e "\n[INFO] -- Configuring hostname..."
     echo "$hostname" > /etc/hostname
 
-    echo -e "\n[INFO] -- Setting up hosts file..."
+    echo -e "\n[INFO] -- Configuring hosts file..."
     echo -e "127.0.0.1\tlocalhost\n::1\t\tlocalhost\n127.0.1.1\t$hostname.localdomain\t$hostname" > /etc/hosts
 
-    echo -e "\n[INFO] -- Setting up initramfs..."
+    echo -e "\n[INFO] -- Configuring initramfs..."
     sed -i 's/^HOOKS.*/HOOKS=(base udev autodetect microcode modconf kms keyboard keymap consolefont block encrypt btrfs filesystems fsck resume)/' /etc/mkinitcpio.conf
     sed -i 's/^MODULES.*/MODULES=(btrfs)/' /etc/mkinitcpio.conf
     sed -i 's/^BINARIES.*/BINARIES=(btrfs)/' /etc/mkinitcpio.conf
     mkinitcpio -P
 
-    echo -e "\n[INFO] -- Setting up user $username..."
+    echo -e "\n[INFO] -- Configuring user $username..."
     useradd -m -G wheel -s /bin/bash $username
     echo -e "$userPassword\n$userPassword" | passwd $username
     sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
@@ -173,12 +171,15 @@ arch-chroot /mnt /bin/bash -- <<EOT
     echo -e "\n[INFO] -- Installing systemd-boot..."
     bootctl --path=/boot/ install
 
-    echo -e "\n[INFO] -- Setting up systemd-boot..."
+    echo -e "\n[INFO] -- Configuring systemd-boot..."
     mkdir -p /boot/loader/entries
     echo -e "default arch.conf\ntimeout 4\neditor no" > /boot/loader/loader.conf
 
-    echo -e "\n[INFO] -- Setting up systemd-boot default entry..."
+    echo -e "\n[INFO] -- Configuring systemd-boot default entry..."
     echo -e "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $installDisk"2"):root root=/dev/mapper/root rootflags=subvol=@ rw" > /boot/loader/entries/arch.conf
+
+    echo -e "\n[INFO] -- Setting suspend then hibernate delay to 2 hours..."
+    sed -i 's/#HibernateDelaySec.*/HibernateDelaySec=7200/' /etc/systemd/sleep.conf
 
     echo -e "\n[INFO] -- Enabling services..."
     systemctl enable NetworkManager
@@ -192,22 +193,28 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf lazygit neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship tlp tokei thunderbird unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf lazygit neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing LazyVim..."
     sudo -u $username /bin/bash -e -- <<-EOF
-		rm -rf ~/.config/nvim ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim 2> /dev/null
-		git clone https://github.com/LazyVim/starter ~/.config/nvim
-		rm -rf ~/.config/nvim/.git
+			rm -rf ~/.config/nvim ~/.local/share/nvim ~/.local/state/nvim ~/.cache/nvim 2> /dev/null
+			git clone https://github.com/LazyVim/starter ~/.config/nvim
+			rm -rf ~/.config/nvim/.git
+EOF
+
+    echo -e "\n[INFO] -- Installing catppuccin alacritty themes..."
+    sudo -u $username /bin/bash -e -- <<-EOF
+			curl -LO --output-dir ~/.config/alacritty https://github.com/catppuccin/alacritty/raw/main/catppuccin-mocha.toml
+			curl -LO --output-dir ~/.config/alacritty https://github.com/catppuccin/alacritty/raw/main/catppuccin-latte.toml
 EOF
 
     echo -e "\n[INFO] -- Installing paru..."
     echo "$username ALL=(ALL) NOPASSWD: /usr/bin/pacman" >> /etc/sudoers
     sudo -u $username /bin/bash -e -- <<-EOF
-		mkdir -p ~/bin
-		git clone https://aur.archlinux.org/paru.git ~/bin/paru
-		pushd ~/bin/paru
-		makepkg -si --noconfirm
+			mkdir -p ~/bin
+			git clone https://aur.archlinux.org/paru.git ~/bin/paru
+			pushd ~/bin/paru
+			makepkg -si --noconfirm
 EOF
 
     echo -e "\n[INFO] -- Installing AUR packages..."
@@ -246,7 +253,7 @@ if [[ $desktopEnvironment == "kde" ]]; then
 		git clone https://github.com/boraerciyas/kde_controlcentre ~/.local/share/plasma/plasmoids/kde_controlcentre
 		pushd ~/.local/share/plasma/plasmoids/kde_controlcentre
 		kpackagetool6 -i package
-        ln -s ~/.local/share/kpackage/generic/com.github.boraerciyas.kde_controlcentre ~/.local/share/plasma/plasmoids/
+    ln -s ~/.local/share/kpackage/generic/com.github.boraerciyas.kde_controlcentre ~/.local/share/plasma/plasmoids/
 		popd
 EOF
     systemctl enable sddm
@@ -281,13 +288,13 @@ sed -i '/^'$username'/d' /etc/sudoers
 echo -e "\n[INFO] -- Taking initial snapshot..."
 name="root-$(date +%Y%m%d%H%M%S)"
 btrfs su snapshot -r / /.snapshots/\$name
-echo -e "\n[INFO] -- Setting up systemd-boot snapshot entry..."
+echo -e "\n[INFO] -- Configuring systemd-boot snapshot entry..."
 echo -e "title Arch Linux (\$name)\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $installDisk"2"):root root=/dev/mapper/root rootflags=subvol=@snapshots/\$name ro" > /boot/loader/entries/\$name.conf
 EOT
 
 echo -e "\n[INFO] -- Installing pacman hook for systemd-boot upgrade..."
 mkdir -p /mnt/etc/pacman.d/hooks
-cat <<-EOT > /mnt/etc/pacman.d/hooks/95-systemd-boot.hook
+cat <<-EOT >/mnt/etc/pacman.d/hooks/95-systemd-boot.hook
 	[Trigger]
 	Type = Package
 	Operation = Upgrade
@@ -300,7 +307,7 @@ cat <<-EOT > /mnt/etc/pacman.d/hooks/95-systemd-boot.hook
 EOT
 
 echo -e "\n[INFO] -- Installing snapshotting script..."
-cat <<-'EOT' > /mnt/usr/local/bin/btsnap
+cat <<-'EOT' >/mnt/usr/local/bin/btsnap
 	#!/bin/bash
 
 	set -e
@@ -337,13 +344,13 @@ cat <<-'EOT' > /mnt/usr/local/bin/btsnap
 	echo -e "\n[INFO] -- Taking snapshot of $path"
 	btrfs su snapshot -r $path /.snapshots/$name
 
-	echo -e "\n[INFO] -- Setting up systemd-boot snapshot entry..."
+	echo -e "\n[INFO] -- Configuring systemd-boot snapshot entry..."
 	cat /boot/loader/entries/arch.conf | sed "s/Arch Linux/Arch Linux ($name)/; s#rootflags.*#rootflags=subvol=@snapshots/$name ro#" > /boot/loader/entries/$name.conf
 EOT
 chmod +x /mnt/usr/local/bin/btsnap
 
 echo -e "\n[INFO] -- Installing pacman snapshot hook..."
-cat <<-'EOT' > /mnt/etc/pacman.d/hooks/99-btrfs-snap.hook
+cat <<-'EOT' >/mnt/etc/pacman.d/hooks/99-btrfs-snap.hook
 	[Trigger]
 	Operation = Upgrade
 	Operation = Install
