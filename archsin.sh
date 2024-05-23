@@ -193,7 +193,7 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf lazygit neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf lazygit markdownlint neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing LazyVim..."
     sudo -u $username /bin/bash -e -- <<-EOF
@@ -218,47 +218,40 @@ EOF
 EOF
 
     echo -e "\n[INFO] -- Installing AUR packages..."
-    sudo -u $username paru -S --noconfirm brave-bin freetube-bin visual-studio-code-bin waterfox-bin
+    sudo -u $username paru -S --noconfirm brave-bin freetube-bin waterfox-bin
 
-    extensions=(
-        "catppuccin.catppuccin-vsc"
-        "eamodio.gitlens"
-        "github.copilot"
-        "github.copilot-chat"
-        "medo64.render-crlf"
-        "mhutchie.git-graph"
-        "ms-vscode-remote.remote-containers"
-        "pkief.material-icon-theme"
-        "shakram02.bash-beautify"
-        "vscodevim.vim"
-    )
-
-    for extension in "\${extensions[@]}";
-    do
-        sudo -u $username code --install-extension \$extension
-    done
-
-echo -e "\n[INFO] -- Checking for battery..."
-if [[ -d /sys/class/power_supply/BAT0 ]]; then
-    echo -e "\n[INFO] -- Battery found, installing tlp..."
-    sudo -u $username paru -S --noconfirm tlp tlpui
-    systemctl enable tlp
-fi
+    # extensions=(
+    #     "catppuccin.catppuccin-vsc"
+    #     "eamodio.gitlens"
+    #     "github.copilot"
+    #     "github.copilot-chat"
+    #     "medo64.render-crlf"
+    #     "mhutchie.git-graph"
+    #     "ms-vscode-remote.remote-containers"
+    #     "pkief.material-icon-theme"
+    #     "shakram02.bash-beautify"
+    #     "vscodevim.vim"
+    # )
+    #
+    # for extension in "\${extensions[@]}";
+    # do
+    #     sudo -u $username code --install-extension \$extension
+    # done
 
 if [[ $desktopEnvironment == "kde" ]]; then
     echo -e "\n[INFO] -- Installing KDE..."
-    pacman -S --noconfirm plasma libdbusmenu-glib libblockdev-btrfs udisks2-btrfs kdeconnect
+    pacman -S --noconfirm plasma libdbusmenu-glib libblockdev-btrfs power-profiles-daemon udisks2-btrfs kdeconnect
     sudo -u $username /bin/bash -e -- <<-EOF
-		paru -S --noconfirm plasma6-applets-window-title
-		git clone https://github.com/boraerciyas/kde_controlcentre ~/.local/share/plasma/plasmoids/kde_controlcentre
-		pushd ~/.local/share/plasma/plasmoids/kde_controlcentre
-		kpackagetool6 -i package
-    ln -s ~/.local/share/kpackage/generic/com.github.boraerciyas.kde_controlcentre ~/.local/share/plasma/plasmoids/
-		popd
+			paru -S --noconfirm plasma6-applets-window-title
+			git clone https://github.com/boraerciyas/kde_controlcentre ~/.local/share/plasma/plasmoids/kde_controlcentre
+			pushd ~/.local/share/plasma/plasmoids/kde_controlcentre
+			kpackagetool6 -i package
+			ln -s ~/.local/share/kpackage/generic/com.github.boraerciyas.kde_controlcentre ~/.local/share/plasma/plasmoids/
+			popd
 EOF
     systemctl enable sddm
     mkdir -p /etc/sddm.conf.d
-        cat <<-EOF > /etc/sddm.conf.d/kde_settings.conf
+    cat <<-EOF > /etc/sddm.conf.d/kde_settings.conf
 			[Autologin]
 			Relogin=false
 			Session=
@@ -278,7 +271,7 @@ EOF
 			MaximumUid=60513
 			MinimumUid=1000
 EOF
-    elif [[ $desktopEnvironment == "gnome" ]]; then
+elif [[ $desktopEnvironment == "gnome" ]]; then
     echo -e "\n[INFO] -- Installing GNOME..."
     pacman -S --noconfirm gnome
     systemctl enable gdm
