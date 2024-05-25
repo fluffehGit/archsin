@@ -271,6 +271,7 @@ EOF
 			MaximumUid=60513
 			MinimumUid=1000
 EOF
+    systemctl enable bluetooth
 elif [[ $desktopEnvironment == "gnome" ]]; then
     echo -e "\n[INFO] -- Installing GNOME..."
     pacman -S --noconfirm gnome
@@ -303,42 +304,72 @@ echo -e "\n[INFO] -- Installing snapshotting script..."
 cat <<-'EOT' >/mnt/usr/local/bin/btsnap
 	#!/bin/bash
 
+	RED="\e[31m"
+	NC="\e[0m"
+
+	clean=false
+
 	set -e
 
+	if [[ $EUID -ne 0 ]]; then
+		echo -e "${RED}[ERROR] -- This script must be run as root${NC}"
+		exit 1
+	fi
+
 	usage() {
-	    echo -e "Usage: $(basename $0) -p <subvolume-path> ";
-	    echo -e "Options:";
-	    echo -e "\t-p\tPath to snapshot";
-	    echo -e "Example: $(basename $0) -p /var";
-	    exit 1;
+		echo -e "Usage: $(basename $0) <option> <subvolume-path> "
+		echo -e "Options:"
+		echo -e "\t-p\tPath to snapshot"
+		echo -e "\t-c\tClean snaphsots mode"
+		echo -e "\t-k x\tKeep the most recent x snapshots"
+		echo -e "Example: $(basename $0) -p /var"
+		exit 1
 	}
 
-	while getopts "p:" opt; do
-	    case $opt in
-	        p) path=$OPTARG;;
-	        \?) echo -e "[ERROR] -- Invalid option: $OPTARG";
-	        usage;;
-	        :) echo -e "[ERROR] -- Option -$OPTARG requires an argument.";
-	        usage;;
-	    esac
+	while getopts "p:ck:" opt; do
+		case $opt in
+		p) path=$OPTARG ;;
+		c) clean=true ;;
+		k) keep=$OPTARG ;;
+		:)
+			echo -e "${RED}[ERROR] -- Option $OPTARG requires an argument!"
+			usage
+			;;
+		\?)
+			echo -e "${RED}[ERROR] -- Invalid option: $OPTARG${NC}"
+			usage
+			;;
+		esac
 	done
 
 	if [[ -z $path ]]; then
-	    echo -e "[ERROR] -- Missing required argument!";
-	    usage;
+		echo -e "${RED}[ERROR] -- Missing subvolume path!${NC}"
+		usage
 	fi
 
 	prefix=$(btrfs su show $path | awk '/Name:/{gsub(/@/, ""); print $2}')
 	if [[ -z $prefix ]]; then
-	    prefix="root"
+		prefix="root"
 	fi
 	name="$prefix-$(date +%Y%m%d%H%M%S)"
 
-	echo -e "\n[INFO] -- Taking snapshot of $path"
-	btrfs su snapshot -r $path /.snapshots/$name
+	if $clean; then
+		echo -e "\n[INFO] -- Cleaning snapshots..."
+		ls -1 /.snapshots | sort -r | grep "${prefix}-" | awk "NR>${keep:-0}" | xargs -I {} btrfs su delete /.snapshots/{}
 
-	echo -e "\n[INFO] -- Configuring systemd-boot snapshot entry..."
-	cat /boot/loader/entries/arch.conf | sed "s/Arch Linux/Arch Linux ($name)/; s#rootflags.*#rootflags=subvol=@snapshots/$name ro#" > /boot/loader/entries/$name.conf
+		if [[ $prefix == "root" ]]; then
+			echo -e "\n[INFO] -- Removing bootloader entries..."
+			ls -1 /boot/loader/entries | sort -r | grep "root-" | awk "NR>${keep:-0}" | xargs -I {} rm -rf /boot/loader/entries/{}
+		fi
+	else
+		echo -e "\n[INFO] -- Taking snapshot of $path"
+		btrfs su snapshot -r $path /.snapshots/$name
+
+		if [[ $prefix == "root" ]]; then
+			echo -e "\n[INFO] -- Setting up systemd-boot snapshot entry..."
+			cat /boot/loader/entries/arch.conf | sed "s/Arch Linux/Arch Linux ($name)/; s#rootflags.*#rootflags=subvol=@snapshots/$name ro#" >/boot/loader/entries/$name.conf
+		fi
+	fi
 EOT
 chmod +x /mnt/usr/local/bin/btsnap
 
