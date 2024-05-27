@@ -186,6 +186,9 @@ arch-chroot /mnt /bin/bash -- <<EOT
     systemctl enable fstrim.timer
     systemctl enable firewalld
 
+    echo -e "\n[INFO] -- Configuring firewalld..."
+    firewall-cmd --zone=public --add-service=kdeconnect --permanent
+
     echo -e "\n[INFO] -- Tune pacman..."
     sed -i 's/^#Color/Color/' /etc/pacman.conf
     sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
@@ -193,7 +196,7 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust exfatprogs fd firefox fwupd fzf lazygit markdownlint neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust efibootmgr exfatprogs fd firefox fwupd fzf lazygit markdownlint neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing LazyVim..."
     sudo -u $username /bin/bash -e -- <<-EOF
@@ -204,6 +207,7 @@ EOF
 
     echo -e "\n[INFO] -- Installing catppuccin alacritty themes..."
     sudo -u $username /bin/bash -e -- <<-EOF
+			mkdir -p ~/.config/alacritty/
 			curl -LO --output-dir ~/.config/alacritty https://github.com/catppuccin/alacritty/raw/main/catppuccin-mocha.toml
 			curl -LO --output-dir ~/.config/alacritty https://github.com/catppuccin/alacritty/raw/main/catppuccin-latte.toml
 EOF
@@ -218,29 +222,11 @@ EOF
 EOF
 
     echo -e "\n[INFO] -- Installing AUR packages..."
-    sudo -u $username paru -S --noconfirm brave-bin freetube-bin waterfox-bin
-
-    # extensions=(
-    #     "catppuccin.catppuccin-vsc"
-    #     "eamodio.gitlens"
-    #     "github.copilot"
-    #     "github.copilot-chat"
-    #     "medo64.render-crlf"
-    #     "mhutchie.git-graph"
-    #     "ms-vscode-remote.remote-containers"
-    #     "pkief.material-icon-theme"
-    #     "shakram02.bash-beautify"
-    #     "vscodevim.vim"
-    # )
-    #
-    # for extension in "\${extensions[@]}";
-    # do
-    #     sudo -u $username code --install-extension \$extension
-    # done
+    sudo -u $username paru -S --noconfirm brave-bin freetube-bin localsend-bin waterfox-bin
 
 if [[ $desktopEnvironment == "kde" ]]; then
     echo -e "\n[INFO] -- Installing KDE..."
-    pacman -S --noconfirm plasma libdbusmenu-glib libblockdev-btrfs power-profiles-daemon udisks2-btrfs kdeconnect
+    pacman -S --noconfirm plasma dolphin libdbusmenu-glib libblockdev-btrfs power-profiles-daemon udisks2-btrfs kdeconnect
     sudo -u $username /bin/bash -e -- <<-EOF
 			paru -S --noconfirm plasma6-applets-window-title
 			git clone https://github.com/boraerciyas/kde_controlcentre ~/.local/share/plasma/plasmoids/kde_controlcentre
