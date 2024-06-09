@@ -86,17 +86,21 @@ fi
 
 echo -e "\n[INFO] -- Partitioning $installDisk..."
 echo -e "g\nw\n" | fdisk $installDisk
-echo -e "n\n\n\n+1G\nw\n" | fdisk $installDisk
-echo -e "t\n1\nw\n" | fdisk $installDisk
-echo -e "n\n\n\n\nw\n" | fdisk $installDisk
-echo -e "t\n2\n44\nw\n" | fdisk $installDisk
+echo -e "n\n\n\n+1G\nn\n\n\n\nt\n1\n1\nw\n" | fdisk $installDisk
 
 echo -e "\n[INFO] -- Creating boot partition..."
-mkfs.fat -F32 $installDisk"1"
+if [[ $installDisk == "/dev/nvme"* ]]; then
+	bootPartition="${installDisk}p1"
+	rootPartition="${installDisk}p2"
+else
+	bootPartition="${installDisk}1"
+	rootPartition="${installDisk}2"
+fi
+mkfs.fat -F32 $bootPartition
 
-echo -e "\n[INFO] -- Encrypting partition ${installDisk}2..."
-echo -n $encryptionPassword | cryptsetup luksFormat --type luks2 $installDisk"2"
-echo -n $encryptionPassword | cryptsetup open --type=luks2 $installDisk"2" root
+echo -e "\n[INFO] -- Encrypting partition ${rootPartition}..."
+echo -n $encryptionPassword | cryptsetup luksFormat --type luks2 $rootPartition
+echo -n $encryptionPassword | cryptsetup open --type=luks2 $rootPartition root
 
 echo -e "\n[INFO] -- BTRFS setup..."
 mkfs.btrfs /dev/mapper/root
@@ -117,7 +121,7 @@ mount -o rw,noatime,compress=zstd,space_cache=v2,subvol=@snapshots /dev/mapper/r
 mount -o rw,noatime,compress=zstd,space_cache=v2,subvol=@tmp /dev/mapper/root /mnt/tmp
 mount -o rw,noatime,nodatacow,compress=zstd,space_cache=v2,subvol=@var /dev/mapper/root /mnt/var
 mount -o rw,noatime,nodatacow,compress=zstd,space_cache=v2,subvol=@swap /dev/mapper/root /mnt/swap
-mount $installDisk"1" /mnt/boot
+mount $bootPartition /mnt/boot
 
 echo -e "\n[INFO] -- Enabling swap..."
 btrfs filesystem mkswapfile --size 8G --uuid clear /mnt/swap/swapfile
@@ -180,7 +184,7 @@ arch-chroot /mnt /bin/bash -- <<EOT
     echo -e "default arch.conf\ntimeout 4\neditor no" > /boot/loader/loader.conf
 
     echo -e "\n[INFO] -- Configuring systemd-boot default entry..."
-    echo -e "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $installDisk"2"):root root=/dev/mapper/root rootflags=subvol=@ rw" > /boot/loader/entries/arch.conf
+    echo -e "title Arch Linux\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $rootPartition):root root=/dev/mapper/root rootflags=subvol=@ rw" > /boot/loader/entries/arch.conf
 
     echo -e "\n[INFO] -- Setting suspend then hibernate delay to 2 hours..."
     sed -i 's/#HibernateDelaySec.*/HibernateDelaySec=7200/' /etc/systemd/sleep.conf
@@ -189,9 +193,6 @@ arch-chroot /mnt /bin/bash -- <<EOT
     systemctl enable NetworkManager
     systemctl enable fstrim.timer
     systemctl enable firewalld
-
-    echo -e "\n[INFO] -- Configuring firewalld..."
-    firewall-cmd --zone=public --add-service=kdeconnect --permanent
 
     echo -e "\n[INFO] -- Tune pacman..."
     sed -i 's/^#Color/Color/' /etc/pacman.conf
@@ -273,7 +274,7 @@ echo -e "\n[INFO] -- Taking initial snapshot..."
 name="root-$(date +%Y%m%d%H%M%S)"
 btrfs su snapshot -r / /.snapshots/\$name
 echo -e "\n[INFO] -- Configuring systemd-boot snapshot entry..."
-echo -e "title Arch Linux (\$name)\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $installDisk"2"):root root=/dev/mapper/root rootflags=subvol=@snapshots/\$name ro" > /boot/loader/entries/\$name.conf
+echo -e "title Arch Linux (\$name)\nlinux /vmlinuz-linux\ninitrd /$ucodePackage.img\ninitrd /initramfs-linux.img\noptions cryptdevice=UUID=$(blkid -s UUID -o value $rootPartition):root root=/dev/mapper/root rootflags=subvol=@snapshots/\$name ro" > /boot/loader/entries/\$name.conf
 EOT
 
 echo -e "\n[INFO] -- Installing pacman hook for systemd-boot upgrade..."
