@@ -197,7 +197,7 @@ arch-chroot /mnt /bin/bash -- <<EOT
     reflector --country $mirrorlistCountry --latest 10 --fastest 5 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust efibootmgr exfatprogs fd firefox fwupd fzf lazygit markdownlint net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
+		pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden chromium curl dosfstools dust efibootmgr exfatprogs fd firefox fwupd fzf lazygit markdownlint net-tools nfs-utils nodejs npm ntfs-3g nushell neovim otf-firamono-nerd p7zip pkgfile podman podman-compose procs ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing LazyVim..."
     sudo -u $username /bin/bash -e -- <<-EOF
