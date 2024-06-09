@@ -17,7 +17,6 @@
 #############################################################################################################################
 
 NC='\e[0m'
-WHITE='\e[97m'
 YELLOW='\e[33m'
 RED='\e[31m'
 
@@ -70,7 +69,7 @@ if [[ ! -f /sys/firmware/efi/fw_platform_size ]]; then
 	exit 1
 fi
 
-if ! $(timedatectl list-timezones | grep -qi $timezoneCity); then
+if ! timedatectl list-timezones | grep -qi $timezoneCity; then
 	echo "${RED}[ERROR] -- Timezone city $timezoneCity not found${NC}"
 	exit 1
 fi
@@ -79,14 +78,18 @@ echo -e "\n[INFO] -- Enabling NTP..."
 timedatectl set-ntp true
 
 echo -e "${YELLOW}[WARNING] -- This script will erase all data on $installDisk. Do you want to continue? (y/n)${NC}"
-read answer
+read -r answer
 if [[ $answer == "n" ]]; then
 	echo "Exiting..."
 	exit 0
 fi
 
 echo -e "\n[INFO] -- Partitioning $installDisk..."
-echo -e "g\nn\n\n\n+1G\nt\n1\nn\n\n\n\nt\n2\n44\nw" | fdisk $installDisk
+echo -e "g\nw\n" | fdisk $installDisk
+echo -e "n\n\n\n+1G\nw\n" | fdisk $installDisk
+echo -e "t\n1\nw\n" | fdisk $installDisk
+echo -e "n\n\n\n\nw\n" | fdisk $installDisk
+echo -e "t\n2\n44\nw\n" | fdisk $installDisk
 
 echo -e "\n[INFO] -- Creating boot partition..."
 mkfs.fat -F32 $installDisk"1"
