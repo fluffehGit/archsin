@@ -148,6 +148,7 @@ arch-chroot /mnt /bin/bash -- <<EOT
 
     echo -e "\n[INFO] -- Configuring locale..."
     sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    echo "C.UTF-8 UTF-8" >> /etc/locale.gen
     locale-gen
     echo -e "LANG=en_US.UTF-8"> /etc/locale.conf
 
@@ -193,10 +194,10 @@ arch-chroot /mnt /bin/bash -- <<EOT
     sed -i 's/^#Color/Color/' /etc/pacman.conf
     sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
     pacman -Syy --noconfirm reflector
-    reflector --country $mirrorlistCountry --latest 5 --sort rate --save /etc/pacman.d/mirrorlist
+    reflector --country $mirrorlistCountry --latest 10 --fastest 5 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist
 
     echo -e "\n[INFO] -- Installing base tools..."
-    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust efibootmgr exfatprogs fd firefox fwupd fzf lazygit markdownlint neofetch net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
+    pacman -S --noconfirm alacritty android-tools bash-completion bat bitwarden curl chromium dosfstools dust efibootmgr exfatprogs fd firefox fwupd fzf lazygit markdownlint net-tools nfs-utils nodejs ntfs-3g nushell neovim otf-firamono-nerd p7zip procs podman podman-compose pkgfile ripgrep sd starship thunderbird tlp tokei ttf-firacode-nerd unrar unzip wget wl-clipboard zoxide $graphicsDriver
 
     echo -e "\n[INFO] -- Installing LazyVim..."
     sudo -u $username /bin/bash -e -- <<-EOF
