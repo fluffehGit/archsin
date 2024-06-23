@@ -231,14 +231,37 @@ EOF
 
 if [[ $desktopEnvironment == "kde" ]]; then
     echo -e "\n[INFO] -- Installing KDE..."
-    pacman -S --noconfirm plasma dolphin libdbusmenu-glib libblockdev-btrfs power-profiles-daemon udisks2-btrfs kdeconnect
+    pacman -S --noconfirm plasma dolphin libdbusmenu-glib libblockdev-btrfs power-profiles-daemon udisks2-btrfs kdeconnect okular ark python-pipx
+    usermod -aG i2c $username
+    cp /usr/share/ddcutil/data/60-ddcutil-i2c.rules /etc/udev/rules.d/
+# TODO automate upgrade of plasmoids
     sudo -u $username /bin/bash -e -- <<-EOF
+      pushd \$HOME
 			paru -S --noconfirm plasma6-applets-window-title
-			git clone https://github.com/boraerciyas/kde_controlcentre ~/.local/share/plasma/plasmoids/kde_controlcentre
-			pushd ~/.local/share/plasma/plasmoids/kde_controlcentre
-			kpackagetool6 -i package
-			ln -s ~/.local/share/kpackage/generic/com.github.boraerciyas.kde_controlcentre ~/.local/share/plasma/plasmoids/
-			popd
+      mkdir -p ~/.plasmoids-git
+      pushd ~/.plasmoids-git
+      git clone https://github.com/boraerciyas/kde_controlcentre
+      git clone https://github.com/DenysMb/ChatAI-Plasmoid.git
+      git clone https://github.com/samirgaire10/com.samirgaire10.perplexityAi-plasma6.git
+      git clone https://github.com/prayag2/kde_modernclock
+      git clone https://github.com/davidhi7/ddcci-plasmoid.git
+      cd kde_controlcentre
+      kpackagetool6 -i package/
+      cp -r \$HOME/.local/share/kpackage/generic/com.github.boraerciyas.controlcentre/ \$HOME/.local/share/plasma/plasmoids/
+      cd ../ChatAI-Plasmoid
+      kpackagetool6 -i ./
+      cp -r \$HOME/.local/share/kpackage/generic/ChatAI-Plasmoid/ \$HOME/.local/share/plasma/plasmoids/
+      cd ../com.samirgaire10.perplexityAi-plasma6
+      kpackagetool6 -i ./
+      cp -r \$HOME/.local/share/kpackage/generic/com.samirgaire10.perplexityAi-plasma6/ \$HOME/.local/share/plasma/plasmoids/
+      cd ../kde_modernclock
+      kpackagetool6 -i ./package
+      cp -r \$HOME/.local/share/kpackage/generic/com.github.prayag2.kde_modernclock/ \$HOME/.local/share/plasma/plasmoids/
+      cd ../ddcci-plasmoid
+      pipx install ddcci-plasmoid-backend
+      pipx ensurepath
+      kpackagetool6 -i ./plasmoid
+      cp -r \$HOME/.local/share/kpackage/generic/com.github.davidhi7.ddcci-plasmoid/ \$HOME/.local/share/plasma/plasmoids/
 EOF
     systemctl enable sddm
     mkdir -p /etc/sddm.conf.d
